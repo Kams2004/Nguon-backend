@@ -74,7 +74,8 @@ public class MinioService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build()
             );
-            return url.replace("http://nguon-minio:9000", externalUrl);
+            return url.replace("http://nguon-minio:9000", externalUrl)
+                      .replace("http://minio:9000", externalUrl);
         } catch (Exception e) {
             throw new RuntimeException("Error generating presigned URL: " + e.getMessage());
         }
@@ -90,7 +91,8 @@ public class MinioService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build()
             ) + "&response-content-disposition=attachment";
-            return url.replace("http://nguon-minio:9000", externalUrl);
+            return url.replace("http://nguon-minio:9000", externalUrl)
+                      .replace("http://minio:9000", externalUrl);
         } catch (Exception e) {
             throw new RuntimeException("Error generating download URL: " + e.getMessage());
         }
