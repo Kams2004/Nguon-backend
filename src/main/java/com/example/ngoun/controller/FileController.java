@@ -48,6 +48,17 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/download-url")
+    public ResponseEntity<Map<String, String>> getDownloadUrl(
+            @RequestParam String fileName,
+            @RequestParam(defaultValue = "60") int expiryMinutes) {
+        String downloadUrl = minioService.getDownloadUrl(fileName, expiryMinutes);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("downloadUrl", downloadUrl);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/delete")
     public ResponseEntity<String> deleteFile(@RequestParam String fileName) {
         minioService.deleteFile(fileName);

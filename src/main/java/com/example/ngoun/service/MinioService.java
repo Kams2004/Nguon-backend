@@ -18,6 +18,9 @@ public class MinioService {
     @Value("${minio.bucket-name}")
     private String bucketName;
 
+    @Value("${minio.external-url}")
+    private String externalUrl;
+
     public void createBucketIfNotExists() {
         try {
             boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
@@ -50,7 +53,7 @@ public class MinioService {
 
     public String getPresignedUrl(String objectName, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            String url = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -58,8 +61,25 @@ public class MinioService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build()
             );
+            return url.replace("http://minio:9000", externalUrl);
         } catch (Exception e) {
             throw new RuntimeException("Error generating presigned URL: " + e.getMessage());
+        }
+    }
+
+    public String getDownloadUrl(String objectName, int expiryMinutes) {
+        try {
+            String url = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .expiry(expiryMinutes, TimeUnit.MINUTES)
+                            .build()
+            ) + "&response-content-disposition=attachment";
+            return url.replace("http://minio:9000", externalUrl);
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating download URL: " + e.getMessage());
         }
     }
 
