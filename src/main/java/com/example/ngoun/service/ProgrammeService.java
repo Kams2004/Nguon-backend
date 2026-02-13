@@ -27,12 +27,20 @@ public class ProgrammeService {
     }
 
     public Programme create(Programme programme) {
+        if (repository.findByDayOrder(programme.getDayOrder()).isPresent()) {
+            throw new IllegalArgumentException("Programme with day order " + programme.getDayOrder() + " already exists");
+        }
         return repository.save(programme);
     }
 
     public Programme update(Long id, Programme programme) {
         return repository.findById(id)
                 .map(existing -> {
+                    if (!existing.getDayOrder().equals(programme.getDayOrder()) && 
+                        repository.findByDayOrder(programme.getDayOrder()).isPresent()) {
+                        throw new IllegalArgumentException("Programme with day order " + programme.getDayOrder() + " already exists");
+                    }
+                    existing.setDayOrder(programme.getDayOrder());
                     existing.setDate(programme.getDate());
                     existing.setStartTime(programme.getStartTime());
                     existing.setEndTime(programme.getEndTime());

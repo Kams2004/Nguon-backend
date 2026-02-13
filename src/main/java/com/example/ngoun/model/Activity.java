@@ -11,14 +11,26 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "activities")
+@Table(name = "activities", uniqueConstraints = {
+    @UniqueConstraint(columnNames = "name"),
+    @UniqueConstraint(columnNames = "displayOrder")
+})
 public class Activity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(unique = true, nullable = false)
     private String name;
+    
     @Column(columnDefinition = "TEXT")
     private String description;
+    
+    private String image;
+    
+    @Column(name = "displayOrder", unique = true, nullable = false)
+    private Integer displayOrder;
+    
     private LocalDateTime createdAt;
     private Boolean published;
 }

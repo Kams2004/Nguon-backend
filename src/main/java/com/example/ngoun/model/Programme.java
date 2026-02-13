@@ -12,11 +12,17 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "programmes")
+@Table(name = "programmes", uniqueConstraints = {
+    @UniqueConstraint(columnNames = "dayOrder")
+})
 public class Programme {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(unique = true, nullable = false)
+    private Integer dayOrder;
+    
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
