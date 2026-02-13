@@ -27,6 +27,19 @@ public class MinioService {
             if (!exists) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
             }
+            
+            String policy = "{"
+                    + "\"Version\":\"2012-10-17\","
+                    + "\"Statement\":[{"
+                    + "\"Effect\":\"Allow\","
+                    + "\"Principal\":{\"AWS\":[\"*\"]},"
+                    + "\"Action\":[\"s3:GetObject\"],"
+                    + "\"Resource\":[\"arn:aws:s3:::" + bucketName + "/*\"]"
+                    + "}]}";            
+            minioClient.setBucketPolicy(SetBucketPolicyArgs.builder()
+                    .bucket(bucketName)
+                    .config(policy)
+                    .build());
         } catch (Exception e) {
             throw new RuntimeException("Error creating bucket: " + e.getMessage());
         }
@@ -61,8 +74,7 @@ public class MinioService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build()
             );
-            return url.replace("http://minio:9000", externalUrl)
-                      .replace("http://nguon-minio:9000", externalUrl);
+            return url.replace("http://nguon-minio:9000", externalUrl);
         } catch (Exception e) {
             throw new RuntimeException("Error generating presigned URL: " + e.getMessage());
         }
@@ -78,8 +90,7 @@ public class MinioService {
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
                             .build()
             ) + "&response-content-disposition=attachment";
-            return url.replace("http://minio:9000", externalUrl)
-                      .replace("http://nguon-minio:9000", externalUrl);
+            return url.replace("http://nguon-minio:9000", externalUrl);
         } catch (Exception e) {
             throw new RuntimeException("Error generating download URL: " + e.getMessage());
         }
