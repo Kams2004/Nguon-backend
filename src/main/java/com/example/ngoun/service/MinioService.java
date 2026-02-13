@@ -110,4 +110,17 @@ public class MinioService {
             throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
     }
+
+    public InputStream getFileStream(String objectName) {
+        try {
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting file: " + e.getMessage());
+        }
+    }
 }

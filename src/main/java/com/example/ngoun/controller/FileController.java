@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,5 +64,29 @@ public class FileController {
     public ResponseEntity<String> deleteFile(@RequestParam String fileName) {
         minioService.deleteFile(fileName);
         return ResponseEntity.ok("File deleted successfully");
+    }
+
+    @GetMapping("/view/{folder}/{fileName}")
+    public ResponseEntity<byte[]> viewFile(@PathVariable String folder, @PathVariable String fileName) {
+        try {
+            String objectName = folder + "/" + fileName;
+            InputStream stream = minioService.getFileStream(objectName);
+            byte[] content = stream.readAllBytes();
+            stream.close();
+            
+            String contentType = "application/octet-stream";
+            if (fileName.endsWith(".png")) contentType = "image/png";
+            else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) contentType = "image/jpeg";
+            else if (fileName.endsWith(".gif")) contentType = "image/gif";
+            else if (fileName.endsWith(".mp4")) contentType = "video/mp4";
+            else if (fileName.endsWith(".webm")) contentType = "video/webm";
+            else if (fileName.endsWith(".pdf")) contentType = "application/pdf";
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .body(content);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
