@@ -17,6 +17,7 @@ public class CorsConfig {
                 "http://localhost:8080",
                 "http://10.237.18.152:8080",
                 "http://www.nguonevents.com/",
+                "https://www.nguonevents.com/",
                 "http://167.86.120.214"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
