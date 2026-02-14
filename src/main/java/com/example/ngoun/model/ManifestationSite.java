@@ -26,4 +26,6 @@ public class ManifestationSite {
     @CollectionTable(name = "sub_town_titles", joinColumns = @JoinColumn(name = "site_id"))
     @Column(name = "sub_town_title")
     private List<String> subTownTitles;
+    
+    private Boolean published;
 }

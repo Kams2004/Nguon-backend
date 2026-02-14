@@ -38,6 +38,7 @@ public class ManifestationSiteService {
                     existing.setImage(site.getImage());
                     existing.setTownTitle(site.getTownTitle());
                     existing.setSubTownTitles(site.getSubTownTitles());
+                    existing.setPublished(site.getPublished());
                     return repository.save(existing);
                 }).orElse(null);
     }
