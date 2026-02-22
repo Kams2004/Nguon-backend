@@ -20,6 +20,11 @@ public class ManifestationSiteController {
         return service.findAll();
     }
 
+    @GetMapping("/published")
+    public List<ManifestationSite> getPublished() {
+        return service.findPublished();
+    }
+
     @GetMapping("/{id}")
     public ManifestationSite getById(@PathVariable Long id) {
         return service.findById(id).orElse(null);

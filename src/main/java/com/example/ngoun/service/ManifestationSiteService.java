@@ -17,6 +17,10 @@ public class ManifestationSiteService {
         return repository.findAll();
     }
 
+    public List<ManifestationSite> findPublished() {
+        return repository.findByPublishedTrue();
+    }
+
     public Optional<ManifestationSite> findById(Long id) {
         return repository.findById(id);
     }
@@ -38,6 +42,7 @@ public class ManifestationSiteService {
                     existing.setImage(site.getImage());
                     existing.setTownTitle(site.getTownTitle());
                     existing.setSubTownTitles(site.getSubTownTitles());
+                    existing.setPublished(site.getPublished());
                     return repository.save(existing);
                 }).orElse(null);
     }
