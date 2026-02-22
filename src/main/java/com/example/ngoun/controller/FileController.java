@@ -60,6 +60,28 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/upload/sponsor")
+    public ResponseEntity<Map<String, String>> uploadSponsorFile(@RequestParam("file") MultipartFile file) {
+        String fileName = minioService.uploadFile(file, "sponsors");
+        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("fileName", fileName);
+        response.put("presignedUrl", presignedUrl);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/upload/actuality")
+    public ResponseEntity<Map<String, String>> uploadActualityFile(@RequestParam("file") MultipartFile file) {
+        String fileName = minioService.uploadFile(file, "actualities");
+        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("fileName", fileName);
+        response.put("presignedUrl", presignedUrl);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/presigned-url")
     public ResponseEntity<Map<String, String>> getPresignedUrl(
             @RequestParam String fileName,
