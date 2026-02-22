@@ -5,12 +5,14 @@ import com.example.ngoun.model.User;
 import com.example.ngoun.repository.RoleRepository;
 import com.example.ngoun.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -20,21 +22,33 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (roleRepository.count() == 0) {
-            Role adminRole = new Role();
-            adminRole.setName("ADMIN");
-            adminRole.setDescription("Administrator role");
-            adminRole.setCreatedAt(LocalDateTime.now());
-            roleRepository.save(adminRole);
-            
-            User adminUser = new User();
-            adminUser.setUsername("admin");
-            adminUser.setPassword(passwordEncoder.encode("admin123"));
-            adminUser.setEmail("admin@ngoun.com");
-            adminUser.setRole(adminRole);
-            adminUser.setActive(true);
-            adminUser.setCreatedAt(LocalDateTime.now());
-            userRepository.save(adminUser);
+        try {
+            if (roleRepository.findByName("ADMIN").isEmpty()) {
+                log.info("Creating default admin role and user...");
+                
+                Role adminRole = new Role();
+                adminRole.setName("ADMIN");
+                adminRole.setDescription("Administrator role");
+                adminRole.setCreatedAt(LocalDateTime.now());
+                adminRole = roleRepository.save(adminRole);
+                log.info("Admin role created with ID: {}", adminRole.getId());
+                
+                if (userRepository.findByUsername("admin").isEmpty()) {
+                    User adminUser = new User();
+                    adminUser.setUsername("admin");
+                    adminUser.setPassword(passwordEncoder.encode("admin123"));
+                    adminUser.setEmail("admin@ngoun.com");
+                    adminUser.setRole(adminRole);
+                    adminUser.setActive(true);
+                    adminUser.setCreatedAt(LocalDateTime.now());
+                    userRepository.save(adminUser);
+                    log.info("Admin user created successfully");
+                }
+            } else {
+                log.info("Admin role already exists, skipping initialization");
+            }
+        } catch (Exception e) {
+            log.error("Error initializing default data: {}", e.getMessage(), e);
         }
     }
 }
