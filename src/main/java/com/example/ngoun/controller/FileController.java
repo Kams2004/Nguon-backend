@@ -6,9 +6,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/files")
@@ -108,6 +113,51 @@ public class FileController {
     public ResponseEntity<String> deleteFile(@RequestParam String fileName) {
         minioService.deleteFile(fileName);
         return ResponseEntity.ok("File deleted successfully");
+    }
+
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of(".mp4", ".webm", ".ogg");
+
+    @GetMapping("/thumbnail")
+    public ResponseEntity<byte[]> getThumbnail(@RequestParam String path) {
+        String lower = path.toLowerCase();
+        if (VIDEO_EXTENSIONS.stream().anyMatch(lower::endsWith)) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            InputStream stream = minioService.getFileStream(path);
+            BufferedImage original = ImageIO.read(stream);
+            stream.close();
+            if (original == null) return ResponseEntity.notFound().build();
+
+            int maxW = 1200, maxH = 630;
+            int origW = original.getWidth(), origH = original.getHeight();
+            double scale = Math.min((double) maxW / origW, (double) maxH / origH);
+            int newW = (int) (origW * scale);
+            int newH = (int) (origH * scale);
+
+            BufferedImage resized = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = resized.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(original, 0, 0, newW, newH, null);
+            g.dispose();
+
+            var jpegWriter = ImageIO.getImageWritersByFormatName("jpeg").next();
+            var jpegParams = jpegWriter.getDefaultWriteParam();
+            jpegParams.setCompressionMode(javax.imageio.ImageWriteParam.MODE_EXPLICIT);
+            jpegParams.setCompressionQuality(0.75f);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            jpegWriter.setOutput(ImageIO.createImageOutputStream(out));
+            jpegWriter.write(null, new javax.imageio.IIOImage(resized, null, null), jpegParams);
+            jpegWriter.dispose();
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "image/jpeg")
+                    .header("Cache-Control", "public, max-age=86400")
+                    .body(out.toByteArray());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/view/{folder}/{fileName}")

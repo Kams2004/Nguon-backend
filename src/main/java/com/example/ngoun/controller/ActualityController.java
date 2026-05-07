@@ -62,7 +62,7 @@ public class ActualityController {
         String encodedMedia = Arrays.stream(actuality.getMedia().split("/", -1))
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
                 .collect(java.util.stream.Collectors.joining("/"));
-        String imageUrl = "https://www.nguonevents.com/api/files/view/" + encodedMedia;
+        String imageUrl = "https://www.nguonevents.com/api/files/thumbnail?path=" + encodedMedia;
         String title = escapeHtml(actuality.getTitle());
         String description = actuality.getDescription() != null
                 ? escapeHtml(actuality.getDescription().length() > 200
