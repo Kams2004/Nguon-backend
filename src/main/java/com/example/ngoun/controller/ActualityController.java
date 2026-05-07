@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -58,7 +59,9 @@ public class ActualityController {
         }
 
         String spaUrl = "https://www.nguonevents.com/?news=" + id;
-        String encodedMedia = URLEncoder.encode(actuality.getMedia(), StandardCharsets.UTF_8).replace("+", "%20");
+        String encodedMedia = Arrays.stream(actuality.getMedia().split("/", -1))
+                .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
+                .collect(java.util.stream.Collectors.joining("/"));
         String imageUrl = "https://www.nguonevents.com/api/files/view/" + encodedMedia;
         String title = escapeHtml(actuality.getTitle());
         String description = actuality.getDescription() != null
