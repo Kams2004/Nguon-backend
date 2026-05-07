@@ -3,11 +3,15 @@ package com.example.ngoun.service;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -45,17 +49,38 @@ public class MinioService {
         }
     }
 
+    private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/jpg", "image/png", "image/webp");
+
     public String uploadFile(MultipartFile file, String folder) {
         try {
             createBucketIfNotExists();
             String fileName = folder + "/" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            
+            InputStream inputStream;
+            long size;
+            String contentType = file.getContentType();
+
+            if (contentType != null && IMAGE_TYPES.contains(contentType.toLowerCase())) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                Thumbnails.of(file.getInputStream())
+                        .size(1200, 630)
+                        .outputFormat("jpeg")
+                        .outputQuality(0.75)
+                        .toOutputStream(out);
+                byte[] compressed = out.toByteArray();
+                inputStream = new ByteArrayInputStream(compressed);
+                size = compressed.length;
+                contentType = "image/jpeg";
+            } else {
+                inputStream = file.getInputStream();
+                size = file.getSize();
+            }
+
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(fileName)
-                            .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(file.getContentType())
+                            .stream(inputStream, size, -1)
+                            .contentType(contentType)
                             .build()
             );
             return fileName;
