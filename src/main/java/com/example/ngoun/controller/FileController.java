@@ -133,4 +133,28 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/view/**")
+    public ResponseEntity<byte[]> viewFileByPath(@RequestParam String path) {
+        try {
+            InputStream stream = minioService.getFileStream(path);
+            byte[] content = stream.readAllBytes();
+            stream.close();
+            
+            String contentType = "application/octet-stream";
+            if (path.endsWith(".png")) contentType = "image/png";
+            else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
+            else if (path.endsWith(".gif")) contentType = "image/gif";
+            else if (path.endsWith(".mp4")) contentType = "video/mp4";
+            else if (path.endsWith(".webm")) contentType = "video/webm";
+            else if (path.endsWith(".pdf")) contentType = "application/pdf";
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .header("Cache-Control", "public, max-age=31536000")
+                    .body(content);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
