@@ -7,6 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -56,7 +58,8 @@ public class ActualityController {
         }
 
         String spaUrl = "https://www.nguonevents.com/?news=" + id;
-        String imageUrl = "https://www.nguonevents.com/api/files/view/" + actuality.getMedia();
+        String encodedMedia = URLEncoder.encode(actuality.getMedia(), StandardCharsets.UTF_8).replace("+", "%20");
+        String imageUrl = "https://www.nguonevents.com/api/files/view/" + encodedMedia;
         String title = escapeHtml(actuality.getTitle());
         String description = actuality.getDescription() != null
                 ? escapeHtml(actuality.getDescription().length() > 200
