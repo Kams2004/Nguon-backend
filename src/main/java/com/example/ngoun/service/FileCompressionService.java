@@ -78,7 +78,7 @@ public class FileCompressionService {
     private CompressedFile compressPdf(InputStream inputStream, CompressionProfile profile) throws Exception {
         byte[] pdfBytes = inputStream.readAllBytes();
         try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
-            for (PDPage page : doc) {
+            for (PDPage page : doc.getPages()) {
                 compressImagesInPage(page.getResources(), doc, profile);
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
