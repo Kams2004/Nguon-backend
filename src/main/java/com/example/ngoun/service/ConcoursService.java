@@ -33,6 +33,9 @@ public class ConcoursService {
     }
 
     public Concours create(ConcoursRequest req) {
+        concoursRepository.findByCategorie(req.getCategorie()).ifPresent(c -> {
+            throw new IllegalArgumentException("Un concours avec la catégorie '" + req.getCategorie() + "' existe déjà.");
+        });
         Concours concours = new Concours();
         concours.setCategorie(req.getCategorie());
         concours.setSousCategorie(req.getSousCategorie());
@@ -45,6 +48,11 @@ public class ConcoursService {
 
     public Concours update(Long id, ConcoursRequest req) {
         return concoursRepository.findById(id).map(existing -> {
+            if (!existing.getCategorie().equals(req.getCategorie())) {
+                concoursRepository.findByCategorie(req.getCategorie()).ifPresent(c -> {
+                    throw new IllegalArgumentException("Un concours avec la catégorie '" + req.getCategorie() + "' existe déjà.");
+                });
+            }
             existing.setCategorie(req.getCategorie());
             existing.setSousCategorie(req.getSousCategorie());
             existing.setAffiche(req.getAffiche());
@@ -56,6 +64,13 @@ public class ConcoursService {
     public Concours soumettre(Long id) {
         return concoursRepository.findById(id).map(concours -> {
             concours.setSoumis(true);
+            return concoursRepository.save(concours);
+        }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
+    }
+
+    public Concours unsoumettre(Long id) {
+        return concoursRepository.findById(id).map(concours -> {
+            concours.setSoumis(false);
             return concoursRepository.save(concours);
         }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
     }

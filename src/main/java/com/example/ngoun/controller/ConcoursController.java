@@ -54,6 +54,12 @@ public class ConcoursController {
         return ResponseEntity.ok(service.soumettre(id));
     }
 
+    /** Retirer un concours de l'affichage public */
+    @PatchMapping("/{id}/unsoumettre")
+    public ResponseEntity<Concours> unsoumettre(@PathVariable Long id) {
+        return ResponseEntity.ok(service.unsoumettre(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
