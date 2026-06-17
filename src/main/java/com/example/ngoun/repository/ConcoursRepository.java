@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface ConcoursRepository extends JpaRepository<Concours, Long> {
     List<Concours> findBySoumis(Boolean soumis);
     List<Concours> findByPeriode(String periode);
-    Optional<Concours> findByCategorie(String categorie);
+    boolean existsByCategorie(String categorie);
+    boolean existsByCategorieAndIdNot(String categorie, Long id);
 }

@@ -33,9 +33,9 @@ public class ConcoursService {
     }
 
     public Concours create(ConcoursRequest req) {
-        concoursRepository.findByCategorie(req.getCategorie()).ifPresent(c -> {
+        if (concoursRepository.existsByCategorie(req.getCategorie())) {
             throw new IllegalArgumentException("Un concours avec la catégorie '" + req.getCategorie() + "' existe déjà.");
-        });
+        }
         Concours concours = new Concours();
         concours.setCategorie(req.getCategorie());
         concours.setSousCategorie(req.getSousCategorie());
@@ -49,9 +49,9 @@ public class ConcoursService {
     public Concours update(Long id, ConcoursRequest req) {
         return concoursRepository.findById(id).map(existing -> {
             if (!existing.getCategorie().equals(req.getCategorie())) {
-                concoursRepository.findByCategorie(req.getCategorie()).ifPresent(c -> {
+                if (concoursRepository.existsByCategorieAndIdNot(req.getCategorie(), id)) {
                     throw new IllegalArgumentException("Un concours avec la catégorie '" + req.getCategorie() + "' existe déjà.");
-                });
+                }
             }
             existing.setCategorie(req.getCategorie());
             existing.setSousCategorie(req.getSousCategorie());
