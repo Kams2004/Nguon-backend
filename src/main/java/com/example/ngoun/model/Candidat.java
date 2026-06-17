@@ -1,0 +1,70 @@
+package com.example.ngoun.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "candidats")
+public class Candidat {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // --- Informations personnelles ---
+    @Column(nullable = false)
+    private String nomPrenoms;
+
+    @Column(nullable = false)
+    private LocalDate dateNaissance;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Sexe sexe;
+
+    @Column(nullable = false)
+    private String nationalite;
+
+    private String professionEtablissement;
+    private String ville;
+
+    @Column(nullable = false)
+    private String telephone;
+
+    private String whatsapp;
+
+    @Column(nullable = false)
+    private String email;
+
+    // --- Personne à contacter en cas d'urgence ---
+    private String urgenceNom;
+    private String urgenceTel;
+
+    // --- Déclaration ---
+    private String faitA;
+    private LocalDate dateFait;
+
+    /** Chemin MinIO vers l'image/PDF de la signature */
+    private String signature;
+
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DocumentCandidat> documents;
+
+    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Participation> participations;
+
+    public enum Sexe {
+        MASCULIN, FEMININ
+    }
+}

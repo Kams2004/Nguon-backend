@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.service.FileCompressionService.CompressionProfile;
 import com.example.ngoun.service.MinioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,78 +24,60 @@ public class FileController {
 
     @PostMapping("/upload/programme")
     public ResponseEntity<Map<String, String>> uploadProgrammeFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "programmes");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "programmes", CompressionProfile.AFFICHE));
     }
 
     @PostMapping("/upload/media")
     public ResponseEntity<Map<String, String>> uploadMediaFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "media");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "media", CompressionProfile.AFFICHE));
     }
 
     @PostMapping("/upload/activity")
     public ResponseEntity<Map<String, String>> uploadActivityFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "activity");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "activity", CompressionProfile.AFFICHE));
     }
 
     @PostMapping("/upload/site")
     public ResponseEntity<Map<String, String>> uploadSiteFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "site");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "site", CompressionProfile.AFFICHE));
     }
 
     @PostMapping("/upload/sponsor")
     public ResponseEntity<Map<String, String>> uploadSponsorFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "sponsors");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "sponsors", CompressionProfile.AFFICHE));
     }
 
     @PostMapping("/upload/actuality")
     public ResponseEntity<Map<String, String>> uploadActualityFile(@RequestParam("file") MultipartFile file) {
-        String fileName = minioService.uploadFile(file, "actualities");
-        String presignedUrl = minioService.getPresignedUrl(fileName, 60);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("fileName", fileName);
-        response.put("presignedUrl", presignedUrl);
-        return ResponseEntity.ok(response);
+        return buildResponse(minioService.uploadFile(file, "actualities", CompressionProfile.AFFICHE));
+    }
+
+    @PostMapping("/upload/concours/affiche")
+    public ResponseEntity<Map<String, String>> uploadConcoursAffiche(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "concours/affiches", CompressionProfile.AFFICHE));
+    }
+
+    @PostMapping("/upload/concours/fiche")
+    public ResponseEntity<Map<String, String>> uploadConcoursFiche(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "concours/fiches", CompressionProfile.FICHE_PDF));
+    }
+
+    @PostMapping("/upload/candidat/document")
+    public ResponseEntity<Map<String, String>> uploadCandidatDocument(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "candidats/documents", CompressionProfile.DOCUMENT));
+    }
+
+    @PostMapping("/upload/candidat/signature")
+    public ResponseEntity<Map<String, String>> uploadCandidatSignature(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "candidats/signatures", CompressionProfile.SIGNATURE));
     }
 
     @GetMapping("/presigned-url")
     public ResponseEntity<Map<String, String>> getPresignedUrl(
             @RequestParam String fileName,
             @RequestParam(defaultValue = "60") int expiryMinutes) {
-        String presignedUrl = minioService.getPresignedUrl(fileName, expiryMinutes);
-        
         Map<String, String> response = new HashMap<>();
-        response.put("presignedUrl", presignedUrl);
+        response.put("presignedUrl", minioService.getPresignedUrl(fileName, expiryMinutes));
         return ResponseEntity.ok(response);
     }
 
@@ -102,10 +85,8 @@ public class FileController {
     public ResponseEntity<Map<String, String>> getDownloadUrl(
             @RequestParam String fileName,
             @RequestParam(defaultValue = "60") int expiryMinutes) {
-        String downloadUrl = minioService.getDownloadUrl(fileName, expiryMinutes);
-        
         Map<String, String> response = new HashMap<>();
-        response.put("downloadUrl", downloadUrl);
+        response.put("downloadUrl", minioService.getDownloadUrl(fileName, expiryMinutes));
         return ResponseEntity.ok(response);
     }
 
@@ -167,17 +148,8 @@ public class FileController {
             InputStream stream = minioService.getFileStream(objectName);
             byte[] content = stream.readAllBytes();
             stream.close();
-            
-            String contentType = "application/octet-stream";
-            if (fileName.endsWith(".png")) contentType = "image/png";
-            else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) contentType = "image/jpeg";
-            else if (fileName.endsWith(".gif")) contentType = "image/gif";
-            else if (fileName.endsWith(".mp4")) contentType = "video/mp4";
-            else if (fileName.endsWith(".webm")) contentType = "video/webm";
-            else if (fileName.endsWith(".pdf")) contentType = "application/pdf";
-            
             return ResponseEntity.ok()
-                    .header("Content-Type", contentType)
+                    .header("Content-Type", resolveContentType(fileName))
                     .body(content);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
@@ -190,21 +162,30 @@ public class FileController {
             InputStream stream = minioService.getFileStream(path);
             byte[] content = stream.readAllBytes();
             stream.close();
-            
-            String contentType = "application/octet-stream";
-            if (path.endsWith(".png")) contentType = "image/png";
-            else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
-            else if (path.endsWith(".gif")) contentType = "image/gif";
-            else if (path.endsWith(".mp4")) contentType = "video/mp4";
-            else if (path.endsWith(".webm")) contentType = "video/webm";
-            else if (path.endsWith(".pdf")) contentType = "application/pdf";
-            
             return ResponseEntity.ok()
-                    .header("Content-Type", contentType)
+                    .header("Content-Type", resolveContentType(path))
                     .header("Cache-Control", "public, max-age=31536000")
                     .body(content);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    private ResponseEntity<Map<String, String>> buildResponse(String fileName) {
+        Map<String, String> response = new HashMap<>();
+        response.put("fileName", fileName);
+        response.put("presignedUrl", minioService.getPresignedUrl(fileName, 60));
+        return ResponseEntity.ok(response);
+    }
+
+    private String resolveContentType(String name) {
+        String n = name.toLowerCase();
+        if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".gif")) return "image/gif";
+        if (n.endsWith(".mp4")) return "video/mp4";
+        if (n.endsWith(".webm")) return "video/webm";
+        if (n.endsWith(".pdf")) return "application/pdf";
+        return "application/octet-stream";
     }
 }

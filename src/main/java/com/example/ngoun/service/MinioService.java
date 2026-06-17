@@ -1,23 +1,22 @@
 package com.example.ngoun.service;
 
+import com.example.ngoun.service.FileCompressionService.CompressionProfile;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
-import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class MinioService {
     private final MinioClient minioClient;
+    private final FileCompressionService compressionService;
 
     @Value("${minio.bucket-name}")
     private String bucketName;
@@ -49,38 +48,31 @@ public class MinioService {
         }
     }
 
-    private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/jpg", "image/png", "image/webp");
-
     public String uploadFile(MultipartFile file, String folder) {
+        return uploadFile(file, folder, CompressionProfile.AFFICHE);
+    }
+
+    public String uploadFile(MultipartFile file, String folder, CompressionProfile profile) {
         try {
             createBucketIfNotExists();
-            String fileName = folder + "/" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            InputStream inputStream;
-            long size;
-            String contentType = file.getContentType();
+            String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+            // Normaliser l'extension selon le type compressé
+            FileCompressionService.CompressedFile compressed = compressionService.compress(
+                    file.getInputStream(), file.getContentType(), originalName, profile);
 
-            if (contentType != null && IMAGE_TYPES.contains(contentType.toLowerCase())) {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                Thumbnails.of(file.getInputStream())
-                        .size(1200, 630)
-                        .outputFormat("jpeg")
-                        .outputQuality(0.75)
-                        .toOutputStream(out);
-                byte[] compressed = out.toByteArray();
-                inputStream = new ByteArrayInputStream(compressed);
-                size = compressed.length;
-                contentType = "image/jpeg";
-            } else {
-                inputStream = file.getInputStream();
-                size = file.getSize();
-            }
+            String extension = compressed.contentType().equals("image/jpeg") ? ".jpg"
+                    : compressed.contentType().equals("application/pdf") ? ".pdf"
+                    : originalName.contains(".") ? originalName.substring(originalName.lastIndexOf('.')) : "";
+
+            String fileName = folder + "/" + System.currentTimeMillis() + "_"
+                    + originalName.replaceAll("\\.[^.]+$", "") + extension;
 
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(fileName)
-                            .stream(inputStream, size, -1)
-                            .contentType(contentType)
+                            .stream(new ByteArrayInputStream(compressed.data()), compressed.data().length, -1)
+                            .contentType(compressed.contentType())
                             .build()
             );
             return fileName;
