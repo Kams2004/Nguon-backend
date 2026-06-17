@@ -49,13 +49,13 @@ public class ConcoursController {
     }
 
     /** Soumettre un concours pour ouvrir les inscriptions */
-    @PatchMapping("/{id}/soumettre")
+    @PutMapping("/{id}/soumettre")
     public ResponseEntity<Concours> soumettre(@PathVariable Long id) {
         return ResponseEntity.ok(service.soumettre(id));
     }
 
     /** Retirer un concours de l'affichage public */
-    @PatchMapping("/{id}/unsoumettre")
+    @PutMapping("/{id}/unsoumettre")
     public ResponseEntity<Concours> unsoumettre(@PathVariable Long id) {
         return ResponseEntity.ok(service.unsoumettre(id));
     }
