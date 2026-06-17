@@ -1,0 +1,50 @@
+-------------------------------
+Updated HTTPS Server Block for /etc/nginx/sites-available/nguonevents.com
+-------------------------------
+
+server {
+    listen 443 ssl;
+    server_name nguonevents.com www.nguonevents.com;
+    
+    client_max_body_size 100M;
+
+    ssl_certificate /etc/letsencrypt/live/nguonevents.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/nguonevents.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Increase timeouts for large file uploads
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+    }
+
+    # Proxy MinIO for external access
+    location /minio/ {
+        proxy_pass http://127.0.0.1:9000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # MinIO specific settings
+        proxy_buffering off;
+        proxy_request_buffering off;
+        client_max_body_size 100M;
+    }
+}

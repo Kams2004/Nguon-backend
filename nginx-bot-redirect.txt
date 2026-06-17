@@ -1,0 +1,84 @@
+-------------------------------
+Add this INSIDE the HTTPS server block (section 3)
+in /etc/nginx/sites-available/nguonevents.com
+REPLACE the existing "location /" block with this:
+-------------------------------
+
+    # Detect social media crawlers and serve OG preview
+    map $http_user_agent $is_bot {
+        default 0;
+        "~*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Discordbot|vkShare|W3C_Validator)" 1;
+    }
+
+    location / {
+        if ($is_bot) {
+            # Extract the news query param and redirect bot to preview endpoint
+            rewrite ^.*[?&]news=([0-9]+).*$ /api/actualities/preview/$1 last;
+        }
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+-------------------------------
+IMPORTANT: The map block must be placed OUTSIDE the server block,
+inside the http block — i.e. at the top of the file before any server{} block.
+Move the map{} block to the top of the file.
+-------------------------------
+
+Final structure of /etc/nginx/sites-available/nguonevents.com:
+
+map $http_user_agent $is_bot {
+    default 0;
+    "~*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Discordbot|vkShare|W3C_Validator)" 1;
+}
+
+server {
+    listen 80;
+    server_name 167.86.120.214;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        ...
+    }
+}
+
+server {
+    listen 80;
+    server_name nguonevents.com www.nguonevents.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name nguonevents.com www.nguonevents.com;
+    client_max_body_size 100M;
+
+    ssl_certificate /etc/letsencrypt/live/nguonevents.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/nguonevents.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        if ($is_bot) {
+            rewrite ^.*[?&]news=([0-9]+).*$ /api/actualities/preview/$1 last;
+        }
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+    }
+}
