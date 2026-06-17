@@ -42,7 +42,10 @@ public class FileCompressionService {
     }
 
     private static final java.util.Set<String> IMAGE_TYPES =
-            java.util.Set.of("image/jpeg", "image/jpg", "image/png", "image/webp");
+            java.util.Set.of("image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif");
+
+    private static final java.util.Set<String> IMAGE_EXTENSIONS =
+            java.util.Set.of(".jpg", ".jpeg", ".png", ".webp", ".gif");
 
     public record CompressedFile(byte[] data, String contentType) {}
 
@@ -52,12 +55,15 @@ public class FileCompressionService {
             String ct = originalContentType != null ? originalContentType.toLowerCase() : "";
             String name = originalFilename != null ? originalFilename.toLowerCase() : "";
 
-            if (IMAGE_TYPES.contains(ct)) {
+            boolean isImage = IMAGE_TYPES.contains(ct)
+                    || IMAGE_EXTENSIONS.stream().anyMatch(name::endsWith);
+            boolean isPdf = ct.equals("application/pdf") || name.endsWith(".pdf");
+
+            if (isImage) {
                 return compressImage(inputStream, profile);
-            } else if (ct.equals("application/pdf") || name.endsWith(".pdf")) {
+            } else if (isPdf) {
                 return compressPdf(inputStream, profile);
             } else {
-                // Autre type : pas de compression
                 return new CompressedFile(inputStream.readAllBytes(), originalContentType);
             }
         } catch (Exception e) {

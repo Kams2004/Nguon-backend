@@ -1,5 +1,7 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -66,6 +68,11 @@ public class Candidat {
     private List<Participation> participations;
 
     public enum Sexe {
-        MASCULIN, FEMININ
+        MASCULIN, FEMININ;
+
+        @JsonCreator
+        public static Sexe fromString(String value) {
+            return Sexe.valueOf(value.toUpperCase());
+        }
     }
 }
