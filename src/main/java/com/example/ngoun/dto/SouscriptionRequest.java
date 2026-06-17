@@ -28,7 +28,8 @@ public class SouscriptionRequest {
     // Déclaration
     private String faitA;
     private LocalDate dateFait;
-    private String signature;
+    /** Nom et prénom ressaisis manuellement — fait office de signature */
+    private String signatureNom;
 
     // Concours choisis (liste d'IDs)
     private List<Long> concoursIds;

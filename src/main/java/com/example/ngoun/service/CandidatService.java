@@ -59,7 +59,7 @@ public class CandidatService {
         candidat.setUrgenceTel(req.getUrgenceTel());
         candidat.setFaitA(req.getFaitA());
         candidat.setDateFait(req.getDateFait());
-        candidat.setSignature(req.getSignature());
+        candidat.setSignatureNom(req.getSignatureNom());
         if (candidat.getCreatedAt() == null) {
             candidat.setCreatedAt(LocalDateTime.now());
         }

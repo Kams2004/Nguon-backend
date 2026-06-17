@@ -53,8 +53,9 @@ public class Candidat {
     private String faitA;
     private LocalDate dateFait;
 
-    /** Chemin MinIO vers l'image/PDF de la signature */
-    private String signature;
+    /** Signature : nom et prénom ressaisis manuellement par le candidat */
+    @Column(nullable = false)
+    private String signatureNom;
 
     private LocalDateTime createdAt;
 
