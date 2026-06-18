@@ -107,6 +107,7 @@ public class CandidatService {
         return documentCandidatRepository.findByCandidatId(candidatId);
     }
 
+    @Transactional
     public void delete(Long id) {
         candidatRepository.deleteById(id);
     }

@@ -75,6 +75,7 @@ public class ConcoursService {
         }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
     }
 
+    @Transactional
     public void delete(Long id) {
         concoursRepository.deleteById(id);
     }

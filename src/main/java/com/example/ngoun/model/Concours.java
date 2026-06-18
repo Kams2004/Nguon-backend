@@ -37,4 +37,7 @@ public class Concours {
 
     @OneToMany(mappedBy = "concours", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FicheDescriptive> fichesDescriptives;
+
+    @OneToMany(mappedBy = "concours", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Participation> participations;
 }
