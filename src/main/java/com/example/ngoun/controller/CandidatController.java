@@ -62,6 +62,6 @@ public class CandidatController {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleError(IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
     }
 }
