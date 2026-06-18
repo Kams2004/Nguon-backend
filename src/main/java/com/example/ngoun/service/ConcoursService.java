@@ -79,10 +79,7 @@ public class ConcoursService {
     public void delete(Long id) {
         Concours concours = concoursRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
-        // Initialise les collections lazy pour que Hibernate traite la cascade
-        concours.getParticipations().size();
-        concours.getFichesDescriptives().size();
-        // Cascade CascadeType.ALL + orphanRemoval supprime participations et fiches descriptives
+        // Cascade supprime automatiquement : participations et fiches descriptives liées
         concoursRepository.delete(concours);
     }
 
