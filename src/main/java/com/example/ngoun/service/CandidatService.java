@@ -111,7 +111,11 @@ public class CandidatService {
     public void delete(Long id) {
         Candidat candidat = candidatRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Candidat introuvable : " + id));
-        // Cascade supprime automatiquement : participations et documents liés
+        // Force-initialize lazy collections so Hibernate processes the cascade
+        candidat.getParticipations().size();
+        candidat.getDocuments().size();
+        // CascadeType.ALL + orphanRemoval on both collections handles deletion of
+        // participations and documents automatically
         candidatRepository.delete(candidat);
     }
 }
