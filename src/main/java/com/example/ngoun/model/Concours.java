@@ -1,5 +1,6 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,6 +39,7 @@ public class Concours {
     @OneToMany(mappedBy = "concours", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FicheDescriptive> fichesDescriptives;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "concours", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Participation> participations;
 }
