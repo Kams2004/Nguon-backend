@@ -72,7 +72,11 @@ public class Candidat {
 
         @JsonCreator
         public static Sexe fromString(String value) {
-            return Sexe.valueOf(value.toUpperCase());
+            if (value == null) throw new IllegalArgumentException("Sexe value cannot be null");
+            // Normalize accented characters (e.g. FÉMININ → FEMININ)
+            String normalized = java.text.Normalizer.normalize(value.toUpperCase(), java.text.Normalizer.Form.NFD)
+                    .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+            return Sexe.valueOf(normalized);
         }
     }
 }
