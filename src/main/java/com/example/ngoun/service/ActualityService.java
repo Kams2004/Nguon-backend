@@ -12,37 +12,45 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ActualityService {
     private final ActualityRepository actualityRepository;
-    
+    private final PresignedUrlCache urlCache;
+
     public List<Actuality> getAllActualities() {
-        return actualityRepository.findAll();
+        return actualityRepository.findAll().stream().map(this::enrich).toList();
     }
-    
+
     public List<Actuality> getPublishedActualities() {
-        return actualityRepository.findByPublishedTrue();
+        return actualityRepository.findByPublishedTrue().stream().map(this::enrich).toList();
     }
-    
+
     public Actuality getActualityById(Long id) {
-        return actualityRepository.findById(id).orElse(null);
+        return actualityRepository.findById(id).map(this::enrich).orElse(null);
     }
-    
+
     public Actuality createActuality(Actuality actuality) {
         actuality.setCreatedAt(LocalDateTime.now());
-        return actualityRepository.save(actuality);
+        return enrich(actualityRepository.save(actuality));
     }
-    
+
     public Actuality updateActuality(Long id, Actuality actuality) {
-        Actuality existing = actualityRepository.findById(id).orElse(null);
-        if (existing != null) {
+        return actualityRepository.findById(id).map(existing -> {
+            urlCache.invalidate(existing.getMedia());
             existing.setTitle(actuality.getTitle());
             existing.setDescription(actuality.getDescription());
             existing.setMedia(actuality.getMedia());
             existing.setPublished(actuality.getPublished());
-            return actualityRepository.save(existing);
-        }
-        return null;
+            return enrich(actualityRepository.save(existing));
+        }).orElse(null);
     }
-    
+
     public void deleteActuality(Long id) {
-        actualityRepository.deleteById(id);
+        actualityRepository.findById(id).ifPresent(a -> {
+            urlCache.invalidate(a.getMedia());
+            actualityRepository.delete(a);
+        });
+    }
+
+    private Actuality enrich(Actuality a) {
+        a.setPresignedUrl(urlCache.get(a.getMedia()));
+        return a;
     }
 }

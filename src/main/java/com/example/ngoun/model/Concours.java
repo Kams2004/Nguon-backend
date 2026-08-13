@@ -1,6 +1,7 @@
 package com.example.ngoun.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -42,4 +43,8 @@ public class Concours {
     @JsonIgnore
     @OneToMany(mappedBy = "concours", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Participation> participations;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String affichePresignedUrl;
 }

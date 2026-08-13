@@ -13,37 +13,46 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MediaItemService {
     private final MediaItemRepository repository;
+    private final PresignedUrlCache urlCache;
 
     public List<MediaItem> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream().map(this::enrich).toList();
     }
 
     public List<MediaItem> findByType(String type) {
-        return repository.findByType(type);
+        return repository.findByType(type).stream().map(this::enrich).toList();
     }
 
     public Optional<MediaItem> findById(Long id) {
-        return repository.findById(id);
+        return repository.findById(id).map(this::enrich);
     }
 
     public MediaItem create(MediaItem mediaItem) {
         mediaItem.setCreatedAt(LocalDateTime.now());
-        return repository.save(mediaItem);
+        return enrich(repository.save(mediaItem));
     }
 
     public MediaItem update(Long id, MediaItem mediaItem) {
-        return repository.findById(id)
-                .map(existing -> {
-                    existing.setType(mediaItem.getType());
-                    existing.setUrl(mediaItem.getUrl());
-                    existing.setTitle(mediaItem.getTitle());
-                    existing.setDescription(mediaItem.getDescription());
-                    existing.setPublished(mediaItem.getPublished());
-                    return repository.save(existing);
-                }).orElse(null);
+        return repository.findById(id).map(existing -> {
+            urlCache.invalidate(existing.getUrl());
+            existing.setType(mediaItem.getType());
+            existing.setUrl(mediaItem.getUrl());
+            existing.setTitle(mediaItem.getTitle());
+            existing.setDescription(mediaItem.getDescription());
+            existing.setPublished(mediaItem.getPublished());
+            return enrich(repository.save(existing));
+        }).orElse(null);
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        repository.findById(id).ifPresent(m -> {
+            urlCache.invalidate(m.getUrl());
+            repository.delete(m);
+        });
+    }
+
+    private MediaItem enrich(MediaItem m) {
+        m.setPresignedUrl(urlCache.get(m.getUrl()));
+        return m;
     }
 }

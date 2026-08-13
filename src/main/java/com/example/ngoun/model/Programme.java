@@ -1,5 +1,6 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,10 +20,10 @@ public class Programme {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(unique = true, nullable = false)
     private Integer dayOrder;
-    
+
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
@@ -32,4 +33,12 @@ public class Programme {
     private String imageUrl;
     private String pdfUrl;
     private Boolean published;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String imagePresignedUrl;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String pdfPresignedUrl;
 }

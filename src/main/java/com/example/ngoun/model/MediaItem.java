@@ -1,5 +1,6 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,4 +24,8 @@ public class MediaItem {
     private String description;
     private LocalDateTime createdAt;
     private Boolean published;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String presignedUrl;
 }

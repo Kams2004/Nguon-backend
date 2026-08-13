@@ -19,17 +19,18 @@ public class ConcoursService {
 
     private final ConcoursRepository concoursRepository;
     private final FicheDescriptiveRepository ficheDescriptiveRepository;
+    private final PresignedUrlCache urlCache;
 
     public List<Concours> findAll() {
-        return concoursRepository.findAll();
+        return concoursRepository.findAll().stream().map(this::enrich).toList();
     }
 
     public List<Concours> findSoumis() {
-        return concoursRepository.findBySoumis(true);
+        return concoursRepository.findBySoumis(true).stream().map(this::enrich).toList();
     }
 
     public Optional<Concours> findById(Long id) {
-        return concoursRepository.findById(id);
+        return concoursRepository.findById(id).map(this::enrich);
     }
 
     public Concours create(ConcoursRequest req) {
@@ -43,7 +44,7 @@ public class ConcoursService {
         concours.setPeriode(req.getPeriode());
         concours.setSoumis(false);
         concours.setCreatedAt(LocalDateTime.now());
-        return concoursRepository.save(concours);
+        return enrich(concoursRepository.save(concours));
     }
 
     public Concours update(Long id, ConcoursRequest req) {
@@ -53,25 +54,26 @@ public class ConcoursService {
                     throw new IllegalArgumentException("Un concours avec la catégorie '" + req.getCategorie() + "' existe déjà.");
                 }
             }
+            urlCache.invalidate(existing.getAffiche());
             existing.setCategorie(req.getCategorie());
             existing.setSousCategorie(req.getSousCategorie());
             existing.setAffiche(req.getAffiche());
             existing.setPeriode(req.getPeriode());
-            return concoursRepository.save(existing);
+            return enrich(concoursRepository.save(existing));
         }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
     }
 
     public Concours soumettre(Long id) {
-        return concoursRepository.findById(id).map(concours -> {
-            concours.setSoumis(true);
-            return concoursRepository.save(concours);
+        return concoursRepository.findById(id).map(c -> {
+            c.setSoumis(true);
+            return enrich(concoursRepository.save(c));
         }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
     }
 
     public Concours unsoumettre(Long id) {
-        return concoursRepository.findById(id).map(concours -> {
-            concours.setSoumis(false);
-            return concoursRepository.save(concours);
+        return concoursRepository.findById(id).map(c -> {
+            c.setSoumis(false);
+            return enrich(concoursRepository.save(c));
         }).orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
     }
 
@@ -79,7 +81,7 @@ public class ConcoursService {
     public void delete(Long id) {
         Concours concours = concoursRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Concours introuvable : " + id));
-        // Cascade supprime automatiquement : participations et fiches descriptives liées
+        urlCache.invalidate(concours.getAffiche());
         concoursRepository.delete(concours);
     }
 
@@ -93,14 +95,31 @@ public class ConcoursService {
         fiche.setTitre(titre);
         fiche.setFichierPdf(fichierPdf);
         fiche.setConcours(concours);
-        return ficheDescriptiveRepository.save(fiche);
+        return enrichFiche(ficheDescriptiveRepository.save(fiche));
     }
 
     public void supprimerFiche(Long ficheId) {
-        ficheDescriptiveRepository.deleteById(ficheId);
+        ficheDescriptiveRepository.findById(ficheId).ifPresent(f -> {
+            urlCache.invalidate(f.getFichierPdf());
+            ficheDescriptiveRepository.delete(f);
+        });
     }
 
     public List<FicheDescriptive> getFichesByConcours(Long concoursId) {
-        return ficheDescriptiveRepository.findByConcoursId(concoursId);
+        return ficheDescriptiveRepository.findByConcoursId(concoursId)
+                .stream().map(this::enrichFiche).toList();
+    }
+
+    private Concours enrich(Concours c) {
+        c.setAffichePresignedUrl(urlCache.get(c.getAffiche()));
+        if (c.getFichesDescriptives() != null) {
+            c.getFichesDescriptives().forEach(this::enrichFiche);
+        }
+        return c;
+    }
+
+    private FicheDescriptive enrichFiche(FicheDescriptive f) {
+        f.setPresignedUrl(urlCache.get(f.getFichierPdf()));
+        return f;
     }
 }

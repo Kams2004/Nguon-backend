@@ -13,13 +13,14 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ActivityService {
     private final ActivityRepository repository;
+    private final PresignedUrlCache urlCache;
 
     public List<Activity> findAll() {
-        return repository.findAll();
+        return repository.findAll().stream().map(this::enrich).toList();
     }
 
     public Optional<Activity> findById(Long id) {
-        return repository.findById(id);
+        return repository.findById(id).map(this::enrich);
     }
 
     public Activity create(Activity activity) {
@@ -30,30 +31,38 @@ public class ActivityService {
             throw new IllegalArgumentException("Activity with order " + activity.getDisplayOrder() + " already exists");
         }
         activity.setCreatedAt(LocalDateTime.now());
-        return repository.save(activity);
+        return enrich(repository.save(activity));
     }
 
     public Activity update(Long id, Activity activity) {
-        return repository.findById(id)
-                .map(existing -> {
-                    if (!existing.getName().equals(activity.getName()) && 
-                        repository.findByName(activity.getName()).isPresent()) {
-                        throw new IllegalArgumentException("Activity with name '" + activity.getName() + "' already exists");
-                    }
-                    if (!existing.getDisplayOrder().equals(activity.getDisplayOrder()) && 
-                        repository.findByDisplayOrder(activity.getDisplayOrder()).isPresent()) {
-                        throw new IllegalArgumentException("Activity with order " + activity.getDisplayOrder() + " already exists");
-                    }
-                    existing.setName(activity.getName());
-                    existing.setDescription(activity.getDescription());
-                    existing.setImage(activity.getImage());
-                    existing.setDisplayOrder(activity.getDisplayOrder());
-                    existing.setPublished(activity.getPublished());
-                    return repository.save(existing);
-                }).orElse(null);
+        return repository.findById(id).map(existing -> {
+            if (!existing.getName().equals(activity.getName()) &&
+                repository.findByName(activity.getName()).isPresent()) {
+                throw new IllegalArgumentException("Activity with name '" + activity.getName() + "' already exists");
+            }
+            if (!existing.getDisplayOrder().equals(activity.getDisplayOrder()) &&
+                repository.findByDisplayOrder(activity.getDisplayOrder()).isPresent()) {
+                throw new IllegalArgumentException("Activity with order " + activity.getDisplayOrder() + " already exists");
+            }
+            urlCache.invalidate(existing.getImage());
+            existing.setName(activity.getName());
+            existing.setDescription(activity.getDescription());
+            existing.setImage(activity.getImage());
+            existing.setDisplayOrder(activity.getDisplayOrder());
+            existing.setPublished(activity.getPublished());
+            return enrich(repository.save(existing));
+        }).orElse(null);
     }
 
     public void delete(Long id) {
-        repository.deleteById(id);
+        repository.findById(id).ifPresent(a -> {
+            urlCache.invalidate(a.getImage());
+            repository.delete(a);
+        });
+    }
+
+    private Activity enrich(Activity a) {
+        a.setPresignedUrl(urlCache.get(a.getImage()));
+        return a;
     }
 }

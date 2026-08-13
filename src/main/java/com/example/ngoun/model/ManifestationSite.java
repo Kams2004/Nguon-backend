@@ -1,5 +1,6 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,16 +17,20 @@ public class ManifestationSite {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String image;
-    
+
     @Column(unique = true, nullable = false)
     private String townTitle;
-    
+
     @ElementCollection
     @CollectionTable(name = "sub_town_titles", joinColumns = @JoinColumn(name = "site_id"))
     @Column(name = "sub_town_title")
     private List<String> subTownTitles;
-    
+
     private Boolean published;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String presignedUrl;
 }

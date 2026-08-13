@@ -1,6 +1,7 @@
 package com.example.ngoun.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,4 +29,8 @@ public class FicheDescriptive {
     @JoinColumn(name = "concours_id", nullable = false)
     @JsonIgnore
     private Concours concours;
+
+    @Transient
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String presignedUrl;
 }
