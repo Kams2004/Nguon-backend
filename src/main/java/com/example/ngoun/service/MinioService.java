@@ -27,9 +27,6 @@ public class MinioService {
     @Value("${minio.external-url}")
     private String minioExternalUrl;
 
-    @Value("${minio.bucket-name}")
-    private String bucketName;
-
     public void createBucketIfNotExists() {
         try {
             boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
