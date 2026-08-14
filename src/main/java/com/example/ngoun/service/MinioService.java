@@ -3,7 +3,7 @@ package com.example.ngoun.service;
 import com.example.ngoun.service.FileCompressionService.CompressionProfile;
 import io.minio.*;
 import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +13,18 @@ import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class MinioService {
     private final MinioClient minioClient;
+    private final MinioClient presignedMinioClient;
     private final FileCompressionService compressionService;
+
+    public MinioService(MinioClient minioClient,
+                        @Qualifier("presignedMinioClient") MinioClient presignedMinioClient,
+                        FileCompressionService compressionService) {
+        this.minioClient = minioClient;
+        this.presignedMinioClient = presignedMinioClient;
+        this.compressionService = compressionService;
+    }
 
     @Value("${minio.bucket-name}")
     private String bucketName;
@@ -80,7 +88,7 @@ public class MinioService {
 
     public String getPresignedUrl(String objectName, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return presignedMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -95,7 +103,7 @@ public class MinioService {
 
     public String getDownloadUrl(String objectName, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return presignedMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
