@@ -57,6 +57,11 @@ public class FileController {
         return buildResponse(minioService.uploadFile(file, "booking", CompressionProfile.AFFICHE));
     }
 
+    @PostMapping("/upload/shop")
+    public ResponseEntity<Map<String, String>> uploadShopFile(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "shop", CompressionProfile.AFFICHE));
+    }
+
     @PostMapping("/upload/concours/affiche")
     public ResponseEntity<Map<String, String>> uploadConcoursAffiche(@RequestParam("file") MultipartFile file) {
         return buildResponse(minioService.uploadFile(file, "concours/affiches", CompressionProfile.AFFICHE));
