@@ -106,7 +106,9 @@ public class CamPayService {
     private String extractMessage(RestClientResponseException e) {
         try {
             Map<String, Object> body = e.getResponseBodyAs(Map.class);
-            Object msg = body != null ? body.get("message") : null;
+            // CamPay uses "message" on collect/status errors but "detail" on auth
+            // errors (e.g. an invalid token) — check both before falling back.
+            Object msg = body != null ? (body.get("message") != null ? body.get("message") : body.get("detail")) : null;
             return msg != null ? String.valueOf(msg) : e.getMessage();
         } catch (Exception parseError) {
             return e.getMessage();

@@ -2,6 +2,7 @@ package com.example.ngoun.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,5 +34,12 @@ public class BookingMedia {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String presignedUrl;
 
-    public enum MediaType { IMAGE, VIDEO }
+    // Serialized lowercase to match the frontend's "image" | "video" type and
+    // every m.type === "image" check built on it.
+    public enum MediaType {
+        IMAGE, VIDEO;
+
+        @JsonValue
+        public String toJson() { return name().toLowerCase(); }
+    }
 }
