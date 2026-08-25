@@ -25,6 +25,11 @@ public class ShopProductService {
                 .stream().map(this::enrich).toList();
     }
 
+    public List<ShopProduct> findPublished() {
+        return repository.findByPublishedTrueOrderByFeaturedDescCreatedAtDesc()
+                .stream().map(this::enrich).toList();
+    }
+
     public Optional<ShopProduct> findById(Long id) {
         return repository.findById(id).map(this::enrich);
     }
@@ -73,6 +78,7 @@ public class ShopProductService {
         p.setTags(req.getTags());
         p.setFeatured(req.isFeatured());
         p.setBadge(req.getBadge());
+        p.setPublished(req.isPublished());
     }
 
     private void addNewMedia(ShopProduct p, ShopProductRequest req) {

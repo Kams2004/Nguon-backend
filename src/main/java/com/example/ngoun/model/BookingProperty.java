@@ -1,5 +1,6 @@
 package com.example.ngoun.model;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -55,5 +56,14 @@ public class BookingProperty {
     @PrePersist void onCreate() { createdAt = updatedAt = LocalDateTime.now(); }
     @PreUpdate  void onUpdate() { updatedAt = LocalDateTime.now(); }
 
-    public enum Category { HOTEL, RESTAURANT }
+    // Serialized lowercase to match the frontend's "hotel" | "restaurant" type
+    // and every comparison built on it — JPA still stores/reads the raw enum
+    // name (HOTEL/RESTAURANT) via @Enumerated(EnumType.STRING) above; @JsonValue
+    // only changes what goes out over JSON, not persistence.
+    public enum Category {
+        HOTEL, RESTAURANT;
+
+        @JsonValue
+        public String toJson() { return name().toLowerCase(); }
+    }
 }

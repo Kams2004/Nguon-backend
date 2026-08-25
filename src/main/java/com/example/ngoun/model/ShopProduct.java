@@ -46,6 +46,9 @@ public class ShopProduct {
     private boolean featured;
     private String badge;
 
+    @Column(nullable = false)
+    private boolean published = true;
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ShopProductMedia> media = new ArrayList<>();
 

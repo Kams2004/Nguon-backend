@@ -16,6 +16,11 @@ public class ShopProductController {
     private final ShopProductService service;
 
     @GetMapping("/api/shop-products")
+    public List<ShopProduct> getPublished() {
+        return service.findPublished();
+    }
+
+    @GetMapping("/api/shop-products/admin")
     public List<ShopProduct> getAll() {
         return service.findAll();
     }

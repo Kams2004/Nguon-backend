@@ -73,8 +73,15 @@ public class ShopOrderService {
             if (req.getPaymentStatus() != null) {
                 o.setPaymentStatus(ShopOrder.PaymentStatus.valueOf(req.getPaymentStatus().toUpperCase()));
             }
+            if (req.getPaymentId() != null) {
+                o.setPaymentId(req.getPaymentId());
+            }
             return repository.save(o);
         });
+    }
+
+    public void delete(String id) {
+        repository.deleteById(id);
     }
 
     private String generateUniqueId() {

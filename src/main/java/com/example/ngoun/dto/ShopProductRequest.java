@@ -23,6 +23,7 @@ public class ShopProductRequest {
     private List<String> tags = new ArrayList<>();
     private boolean featured;
     private String badge;
+    private boolean published = true;
     private List<MediaRef> media = new ArrayList<>();
 
     @Data

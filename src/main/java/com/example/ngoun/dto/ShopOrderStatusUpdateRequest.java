@@ -6,4 +6,5 @@ import lombok.Data;
 public class ShopOrderStatusUpdateRequest {
     private String status;         // optional — only applied if present
     private String paymentStatus;  // optional — only applied if present
+    private String paymentId;      // optional — e.g. the CamPay transaction reference
 }
