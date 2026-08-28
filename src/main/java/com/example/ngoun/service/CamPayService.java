@@ -89,12 +89,20 @@ public class CamPayService {
                     null
             );
         } catch (RestClientResponseException e) {
+            // A failed status *check* (network hiccup, transient 5xx from CamPay,
+            // etc.) is not the same as CamPay telling us the payment itself
+            // failed — that only ever comes back as a clean 200 with
+            // status:"FAILED" in the try block above. Reporting "FAILED" here
+            // would let one bad poll wrongly abort a payment that's still
+            // being confirmed on the customer's phone, so we report "PENDING"
+            // instead and let the frontend's poll loop (with its own timeout)
+            // simply retry on the next interval.
             String message = extractMessage(e);
-            log.warn("CamPay status check failed for {}: {} — {}", reference, e.getStatusCode(), message);
-            return new CamPayStatusResponse(reference, "FAILED", null, null, null, null, null, null, message);
+            log.warn("CamPay status check failed for {}: {} — {} (reporting PENDING, will retry)", reference, e.getStatusCode(), message);
+            return new CamPayStatusResponse(reference, "PENDING", null, null, null, null, null, null, message);
         } catch (Exception e) {
-            log.error("CamPay status check error for {}", reference, e);
-            return new CamPayStatusResponse(reference, "FAILED", null, null, null, null, null, null, "Impossible de contacter le service de paiement.");
+            log.error("CamPay status check error for {} (reporting PENDING, will retry)", reference, e);
+            return new CamPayStatusResponse(reference, "PENDING", null, null, null, null, null, null, "Impossible de contacter le service de paiement.");
         }
     }
 
