@@ -95,7 +95,7 @@ public class VoteService {
         if (vote.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
             return VoteConfirmResponse.fail("Code expiré, veuillez redemander un code.");
         }
-        if (!vote.getOtpCode().equals(otp)) {
+        if (!vote.getOtpCode().equalsIgnoreCase(otp)) {
             return VoteConfirmResponse.fail("Code invalide.");
         }
 
@@ -121,7 +121,14 @@ public class VoteService {
         return email == null ? "" : email.trim().toLowerCase();
     }
 
+    // Excludes visually ambiguous characters (0/O, 1/I/L) since this is
+    // hand-typed from an email into a confirmation box.
+    private static final String OTP_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    private static final int OTP_LENGTH = 6;
+
     private String generateOtp() {
-        return String.valueOf(100000 + random.nextInt(900000));
+        StringBuilder sb = new StringBuilder(OTP_LENGTH);
+        for (int i = 0; i < OTP_LENGTH; i++) sb.append(OTP_CHARS.charAt(random.nextInt(OTP_CHARS.length())));
+        return sb.toString();
     }
 }
