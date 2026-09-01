@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.MediaItem;
 import com.example.ngoun.service.MediaItemService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,14 @@ public class MediaItemController {
     @GetMapping
     public List<MediaItem> getAll(@RequestParam(required = false) String type) {
         return type != null ? service.findByType(type) : service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<MediaItem> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/{id}")

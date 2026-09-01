@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Activity;
 import com.example.ngoun.repository.ActivityRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,6 +20,16 @@ public class ActivityService {
 
     public List<Activity> findAll() {
         return repository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<Activity> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "displayOrder"));
+        String q = search == null ? "" : search.trim();
+        Page<Activity> result = q.isEmpty()
+                ? repository.findAll(request)
+                : repository.findByNameContainingIgnoreCase(q, request);
+        result.forEach(this::enrich);
+        return result;
     }
 
     public Optional<Activity> findById(Long id) {

@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.MediaItem;
 import com.example.ngoun.repository.MediaItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,6 +20,16 @@ public class MediaItemService {
 
     public List<MediaItem> findAll() {
         return repository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<MediaItem> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        Page<MediaItem> result = q.isEmpty()
+                ? repository.findAll(request)
+                : repository.findByTitleContainingIgnoreCase(q, request);
+        result.forEach(this::enrich);
+        return result;
     }
 
     public List<MediaItem> findByType(String type) {

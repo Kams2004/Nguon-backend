@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Actuality;
 import com.example.ngoun.repository.ActualityRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,6 +19,16 @@ public class ActualityService {
 
     public List<Actuality> getAllActualities() {
         return actualityRepository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<Actuality> getPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        Page<Actuality> result = q.isEmpty()
+                ? actualityRepository.findAll(request)
+                : actualityRepository.findByTitleContainingIgnoreCase(q, request);
+        result.forEach(this::enrich);
+        return result;
     }
 
     public List<Actuality> getPublishedActualities() {

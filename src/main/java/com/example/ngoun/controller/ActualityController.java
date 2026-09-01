@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Actuality;
 import com.example.ngoun.service.ActualityService;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +18,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ActualityController {
     private final ActualityService actualityService;
-    
+
     @GetMapping
     public ResponseEntity<List<Actuality>> getAllActualities() {
         return ResponseEntity.ok(actualityService.getAllActualities());
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Actuality> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(actualityService.getPaged(page, size, search));
     }
     
     @GetMapping("/published")
