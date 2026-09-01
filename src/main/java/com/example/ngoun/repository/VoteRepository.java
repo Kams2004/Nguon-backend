@@ -10,4 +10,5 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     Optional<Vote> findByEmail(String email);
     List<Vote> findByVoteProfileIdAndVerifiedTrueOrderByVerifiedAtDesc(Long voteProfileId);
     long countByVoteProfileIdAndVerifiedTrue(Long voteProfileId);
+    void deleteByVoteProfileId(Long voteProfileId);
 }

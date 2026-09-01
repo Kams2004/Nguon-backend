@@ -3,6 +3,7 @@ package com.example.ngoun.service;
 import com.example.ngoun.dto.VoteProfileRequest;
 import com.example.ngoun.model.VoteProfile;
 import com.example.ngoun.repository.VoteProfileRepository;
+import com.example.ngoun.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import java.util.Optional;
 public class VoteProfileService {
 
     private final VoteProfileRepository repository;
+    private final VoteRepository voteRepository;
     private final PresignedUrlCache urlCache;
 
     public List<VoteProfile> findAll() {
@@ -47,9 +49,14 @@ public class VoteProfileService {
         });
     }
 
+    // Deleting a profile that still has (verified or unverified) votes
+    // referencing it would otherwise fail with a foreign-key violation —
+    // those votes are removed first, in the same transaction.
+    @Transactional
     public void delete(Long id) {
         repository.findById(id).ifPresent(p -> {
             urlCache.invalidate(p.getPhotoUrl());
+            voteRepository.deleteByVoteProfileId(id);
             repository.delete(p);
         });
     }
