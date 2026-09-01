@@ -81,7 +81,7 @@ public class CamPayService {
                     str(res.get("reference")),
                     str(res.get("status")),
                     str(res.get("external_reference")),
-                    res.get("amount") != null ? Long.valueOf(str(res.get("amount"))) : null,
+                    toLong(res.get("amount")),
                     str(res.get("currency")),
                     str(res.get("operator")),
                     str(res.get("code")),
@@ -108,6 +108,21 @@ public class CamPayService {
 
     private String str(Object o) {
         return o == null ? null : String.valueOf(o);
+    }
+
+    // CamPay's "amount" can come back as a JSON integer or a decimal (e.g. 12.0)
+    // depending on the transaction — Jackson then hands us an Integer/Long/Double
+    // interchangeably. Long.valueOf("12.0") throws, which was silently turning
+    // every successful status check into a false "can't reach payment service"
+    // error. Handle any Number, and fall back gracefully instead of throwing.
+    private Long toLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Number n) return n.longValue();
+        try {
+            return (long) Double.parseDouble(String.valueOf(o));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")
