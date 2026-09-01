@@ -82,6 +82,11 @@ public class FileController {
         return buildResponse(minioService.uploadFile(file, "candidats/signatures", CompressionProfile.SIGNATURE));
     }
 
+    @PostMapping("/upload/vote-profile")
+    public ResponseEntity<Map<String, String>> uploadVoteProfileFile(@RequestParam("file") MultipartFile file) {
+        return buildResponse(minioService.uploadFile(file, "vote-profiles", CompressionProfile.AFFICHE));
+    }
+
     @GetMapping("/presigned-url")
     public ResponseEntity<Map<String, String>> getPresignedUrl(
             @RequestParam String fileName,
