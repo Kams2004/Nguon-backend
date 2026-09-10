@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Sponsor;
 import com.example.ngoun.service.SponsorService;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +14,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SponsorController {
     private final SponsorService sponsorService;
-    
+
     @GetMapping
     public ResponseEntity<List<Sponsor>> getAllSponsors() {
         return ResponseEntity.ok(sponsorService.getAllSponsors());
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Sponsor> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(sponsorService.findPaged(page, size, search));
     }
     
     @GetMapping("/{id}")

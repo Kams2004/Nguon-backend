@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Message;
 import com.example.ngoun.service.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,14 @@ public class MessageController {
     @GetMapping
     public List<Message> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Message> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/{id}")

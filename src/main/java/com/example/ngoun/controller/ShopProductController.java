@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.dto.ShopProductRequest;
 import com.example.ngoun.model.ShopProduct;
 import com.example.ngoun.service.ShopProductService;
@@ -23,6 +24,15 @@ public class ShopProductController {
     @GetMapping("/api/shop-products/admin")
     public List<ShopProduct> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/api/shop-products/admin/paged")
+    public PageResponse<ShopProduct> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category) {
+        return PageResponse.of(service.findPaged(page, size, search, category));
     }
 
     @GetMapping("/api/shop-products/{id}")

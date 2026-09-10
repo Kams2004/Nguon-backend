@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Role;
 import com.example.ngoun.service.RoleService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,14 @@ public class RoleController {
     @GetMapping
     public List<Role> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Role> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/{id}")

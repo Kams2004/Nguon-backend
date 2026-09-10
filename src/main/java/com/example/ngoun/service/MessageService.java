@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Message;
 import com.example.ngoun.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,6 +19,12 @@ public class MessageService {
 
     public List<Message> findAll() {
         return repository.findAll();
+    }
+
+    public Page<Message> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        return q.isEmpty() ? repository.findAll(request) : repository.findByAuthorityTitleContainingIgnoreCaseOrContentContainingIgnoreCase(q, q, request);
     }
 
     public Optional<Message> findById(Long id) {

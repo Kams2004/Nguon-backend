@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.ManifestationSite;
 import com.example.ngoun.service.ManifestationSiteService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,14 @@ public class ManifestationSiteController {
     @GetMapping
     public List<ManifestationSite> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<ManifestationSite> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/published")

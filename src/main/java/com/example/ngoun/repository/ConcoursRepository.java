@@ -1,6 +1,8 @@
 package com.example.ngoun.repository;
 
 import com.example.ngoun.model.Concours;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,4 +13,5 @@ public interface ConcoursRepository extends JpaRepository<Concours, Long> {
     List<Concours> findByPeriode(String periode);
     boolean existsByCategorie(String categorie);
     boolean existsByCategorieAndIdNot(String categorie, Long id);
+    Page<Concours> findByCategorieContainingIgnoreCaseOrSousCategorieContainingIgnoreCase(String categorie, String sousCategorie, Pageable pageable);
 }

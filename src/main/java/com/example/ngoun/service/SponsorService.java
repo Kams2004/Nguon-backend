@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Sponsor;
 import com.example.ngoun.repository.SponsorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +18,13 @@ public class SponsorService {
 
     public List<Sponsor> getAllSponsors() {
         return sponsorRepository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<Sponsor> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
+        String q = search == null ? "" : search.trim();
+        return (q.isEmpty() ? sponsorRepository.findAll(request) : sponsorRepository.findByNameContainingIgnoreCase(q, request))
+                .map(this::enrich);
     }
 
     public Sponsor getSponsorById(Long id) {

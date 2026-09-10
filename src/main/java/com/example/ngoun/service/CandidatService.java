@@ -4,6 +4,9 @@ import com.example.ngoun.dto.SouscriptionRequest;
 import com.example.ngoun.model.*;
 import com.example.ngoun.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +26,18 @@ public class CandidatService {
 
     public List<Candidat> findAll() {
         return candidatRepository.findAll();
+    }
+
+    public Page<Candidat> findPaged(int page, int size, String search, Long concoursId) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        return candidatRepository.search(q, concoursId, request);
+    }
+
+    /** Backs the admin "export all matching the current filter" action. */
+    public List<Candidat> findAllMatching(String search, Long concoursId) {
+        String q = search == null ? "" : search.trim();
+        return candidatRepository.searchAll(q, concoursId);
     }
 
     public Optional<Candidat> findById(Long id) {

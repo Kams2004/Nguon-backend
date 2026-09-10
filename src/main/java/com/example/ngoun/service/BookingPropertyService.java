@@ -7,6 +7,9 @@ import com.example.ngoun.model.BookingProperty;
 import com.example.ngoun.repository.BookingMediaRepository;
 import com.example.ngoun.repository.BookingPropertyRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,18 @@ public class BookingPropertyService {
     public List<BookingProperty> findAll() {
         return propertyRepo.findAllByOrderByFeaturedDescCreatedAtDesc()
                 .stream().map(this::enrich).toList();
+    }
+
+    public Page<BookingProperty> findPaged(int page, int size, String search, String category) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "featured").and(Sort.by(Sort.Direction.DESC, "createdAt")));
+        String q = search == null ? "" : search.trim();
+        BookingProperty.Category cat = null;
+        if (category != null && !category.isBlank()) {
+            try {
+                cat = BookingProperty.Category.valueOf(category.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) { /* unknown filter value — treat as "all" */ }
+        }
+        return propertyRepo.search(q, cat, request).map(this::enrich);
     }
 
     public Optional<BookingProperty> findById(Long id) {

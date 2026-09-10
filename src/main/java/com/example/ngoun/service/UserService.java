@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.User;
 import com.example.ngoun.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,12 @@ public class UserService {
 
     public List<User> findAll() {
         return repository.findAll();
+    }
+
+    public Page<User> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        return q.isEmpty() ? repository.findAll(request) : repository.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q, request);
     }
 
     public Optional<User> findById(Long id) {

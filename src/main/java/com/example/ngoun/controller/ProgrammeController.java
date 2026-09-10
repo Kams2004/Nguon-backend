@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Programme;
 import com.example.ngoun.service.ProgrammeService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,14 @@ public class ProgrammeController {
     @GetMapping
     public List<Programme> getAll(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return date != null ? service.findByDate(date) : service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Programme> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/{id}")

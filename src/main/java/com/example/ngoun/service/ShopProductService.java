@@ -5,6 +5,9 @@ import com.example.ngoun.model.ShopProduct;
 import com.example.ngoun.model.ShopProductMedia;
 import com.example.ngoun.repository.ShopProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,12 @@ public class ShopProductService {
 
     private final ShopProductRepository repository;
     private final PresignedUrlCache urlCache;
+
+    public Page<ShopProduct> findPaged(int page, int size, String search, String category) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "featured").and(Sort.by(Sort.Direction.DESC, "createdAt")));
+        String q = search == null ? "" : search.trim();
+        return repository.search(q, category, request).map(this::enrich);
+    }
 
     public List<ShopProduct> findAll() {
         return repository.findAllByOrderByFeaturedDescCreatedAtDesc()

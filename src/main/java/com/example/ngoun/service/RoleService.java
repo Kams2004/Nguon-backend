@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Role;
 import com.example.ngoun.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,6 +19,12 @@ public class RoleService {
 
     public List<Role> findAll() {
         return repository.findAll();
+    }
+
+    public Page<Role> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name"));
+        String q = search == null ? "" : search.trim();
+        return q.isEmpty() ? repository.findAll(request) : repository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, request);
     }
 
     public Optional<Role> findById(Long id) {

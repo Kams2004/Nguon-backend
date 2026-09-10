@@ -5,6 +5,9 @@ import com.example.ngoun.model.VoteProfile;
 import com.example.ngoun.repository.VoteProfileRepository;
 import com.example.ngoun.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,13 @@ public class VoteProfileService {
 
     public List<VoteProfile> findAll() {
         return repository.findAllByOrderByCreatedAtAsc().stream().map(this::enrich).toList();
+    }
+
+    public Page<VoteProfile> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        return (q.isEmpty() ? repository.findAll(request) : repository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, request))
+                .map(this::enrich);
     }
 
     public List<VoteProfile> findPublished() {

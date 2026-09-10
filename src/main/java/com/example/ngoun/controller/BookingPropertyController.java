@@ -2,6 +2,7 @@ package com.example.ngoun.controller;
 
 import com.example.ngoun.dto.BookingMediaRequest;
 import com.example.ngoun.dto.BookingPropertyRequest;
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.BookingMedia;
 import com.example.ngoun.model.BookingProperty;
 import com.example.ngoun.service.BookingPropertyService;
@@ -27,6 +28,15 @@ public class BookingPropertyController {
     @GetMapping("/api/booking-properties/admin")
     public List<BookingProperty> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/api/booking-properties/admin/paged")
+    public PageResponse<BookingProperty> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category) {
+        return PageResponse.of(service.findPaged(page, size, search, category));
     }
 
     @GetMapping("/api/booking-properties/{id}")

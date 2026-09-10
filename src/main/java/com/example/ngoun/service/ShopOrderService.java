@@ -6,6 +6,9 @@ import com.example.ngoun.model.ShopOrder;
 import com.example.ngoun.model.ShopOrderItem;
 import com.example.ngoun.repository.ShopOrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,23 @@ public class ShopOrderService {
 
     public List<ShopOrder> findAll() {
         return repository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public Page<ShopOrder> findPaged(int page, int size, String search, String status, String paymentStatus) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String q = search == null ? "" : search.trim();
+        ShopOrder.Status st = parseEnum(ShopOrder.Status.class, status);
+        ShopOrder.PaymentStatus ps = parseEnum(ShopOrder.PaymentStatus.class, paymentStatus);
+        return repository.search(q, st, ps, request);
+    }
+
+    private <T extends Enum<T>> T parseEnum(Class<T> type, String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Enum.valueOf(type, value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public Optional<ShopOrder> findById(String id) {

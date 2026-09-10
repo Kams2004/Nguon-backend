@@ -1,6 +1,7 @@
 package com.example.ngoun.controller;
 
 import com.example.ngoun.dto.ConcoursRequest;
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.model.Concours;
 import com.example.ngoun.model.FicheDescriptive;
 import com.example.ngoun.service.ConcoursService;
@@ -29,6 +30,14 @@ public class ConcoursController {
     @GetMapping
     public List<Concours> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Concours> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        return PageResponse.of(service.findPaged(page, size, search));
     }
 
     @GetMapping("/{id}")

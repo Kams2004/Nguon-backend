@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.ManifestationSite;
 import com.example.ngoun.repository.ManifestationSiteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +19,13 @@ public class ManifestationSiteService {
 
     public List<ManifestationSite> findAll() {
         return repository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<ManifestationSite> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        String q = search == null ? "" : search.trim();
+        return (q.isEmpty() ? repository.findAll(request) : repository.findByTownTitleContainingIgnoreCase(q, request))
+                .map(this::enrich);
     }
 
     public List<ManifestationSite> findPublished() {

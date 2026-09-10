@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.dto.SouscriptionRequest;
 import com.example.ngoun.model.Candidat;
 import com.example.ngoun.model.DocumentCandidat;
@@ -23,6 +24,23 @@ public class CandidatController {
     @GetMapping
     public List<Candidat> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/paged")
+    public PageResponse<Candidat> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long concoursId) {
+        return PageResponse.of(service.findPaged(page, size, search, concoursId));
+    }
+
+    /** Admin : export — toutes les fiches correspondant au filtre actif (pas seulement la page affichée). */
+    @GetMapping("/export")
+    public List<Candidat> export(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long concoursId) {
+        return service.findAllMatching(search, concoursId);
     }
 
     @GetMapping("/{id}")

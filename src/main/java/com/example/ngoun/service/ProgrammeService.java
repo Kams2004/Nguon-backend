@@ -3,6 +3,9 @@ package com.example.ngoun.service;
 import com.example.ngoun.model.Programme;
 import com.example.ngoun.repository.ProgrammeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -17,6 +20,13 @@ public class ProgrammeService {
 
     public List<Programme> findAll() {
         return repository.findAll().stream().map(this::enrich).toList();
+    }
+
+    public Page<Programme> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "dayOrder"));
+        String q = search == null ? "" : search.trim();
+        return (q.isEmpty() ? repository.findAll(request) : repository.findByLocationContainingIgnoreCaseOrActivityContainingIgnoreCase(q, q, request))
+                .map(this::enrich);
     }
 
     public List<Programme> findByDate(LocalDate date) {

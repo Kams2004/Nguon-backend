@@ -4,6 +4,9 @@ import com.example.ngoun.dto.ShopCategoryRequest;
 import com.example.ngoun.model.ShopCategory;
 import com.example.ngoun.repository.ShopCategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +20,12 @@ public class ShopCategoryService {
 
     public List<ShopCategory> findAll() {
         return repository.findAllByOrderByDisplayOrderAsc();
+    }
+
+    public Page<ShopCategory> findPaged(int page, int size, String search) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "displayOrder"));
+        String q = search == null ? "" : search.trim();
+        return q.isEmpty() ? repository.findAll(request) : repository.findByLabelContainingIgnoreCaseOrKeyContainingIgnoreCase(q, q, request);
     }
 
     public Optional<ShopCategory> findById(Long id) {

@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.dto.ShopOrderRequest;
 import com.example.ngoun.dto.ShopOrderStatusUpdateRequest;
 import com.example.ngoun.model.ShopOrder;
@@ -24,6 +25,16 @@ public class ShopOrderController {
     @GetMapping("/api/shop-orders")
     public List<ShopOrder> getAll() {
         return service.findAll();
+    }
+
+    @GetMapping("/api/shop-orders/paged")
+    public PageResponse<ShopOrder> getPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String paymentStatus) {
+        return PageResponse.of(service.findPaged(page, size, search, status, paymentStatus));
     }
 
     @GetMapping("/api/shop-orders/{id}")
