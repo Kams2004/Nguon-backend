@@ -70,9 +70,9 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Creating default shop categories...");
             record Seed(String key, String label, String icon, int order) {}
             List<Seed> seeds = List.of(
-                    new Seed("artisanat", "Artisanat", "palette", 0),
-                    new Seed("vetements", "Vêtements & Textiles", "shirt", 1),
-                    new Seed("gastronomie", "Gastronomie", "utensils", 2),
+                    new Seed("artisanat", "Palette artisanale", "palette", 0),
+                    new Seed("vetements", "Vêtements & T-shirts", "shirt", 1),
+                    new Seed("gastronomie", "Gastronomie & ustensiles", "utensils", 2),
                     new Seed("livres", "Livres & Culture", "book-open", 3),
                     new Seed("bijoux", "Bijoux & Parures", "gem", 4),
                     new Seed("decoration", "Décoration", "wand-sparkles", 5)
