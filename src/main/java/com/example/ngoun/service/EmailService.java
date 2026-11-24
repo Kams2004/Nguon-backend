@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    // Transactional providers often use an SMTP login that isn't an address,
+    // so the sender can be set separately; defaults to the SMTP username.
+    @Value("${app.mail.from:${spring.mail.username}}")
     private String fromEmail;
 
     public void sendEmail(String to, String subject, String body) {
