@@ -6,12 +6,15 @@ import com.example.ngoun.repository.VoteProfileRepository;
 import com.example.ngoun.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -28,9 +31,26 @@ public class VoteProfileService {
 
     public Page<VoteProfile> findPaged(int page, int size, String search) {
         PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
-        String q = search == null ? "" : search.trim();
-        return (q.isEmpty() ? repository.findAll(request) : repository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, request))
-                .map(this::enrich);
+        String q = fold(search);
+        if (q.isEmpty()) return repository.findAll(request).map(this::enrich);
+        // Names are often pasted from social media in Unicode "mathematical
+        // bold" letters, which a SQL LIKE never matches, so the (small) list is
+        // folded and filtered here instead.
+        List<VoteProfile> matches = repository.findAllByOrderByCreatedAtAsc().stream()
+                .filter(p -> fold(p.getName()).contains(q) || fold(p.getDescription()).contains(q))
+                .toList();
+        int from = Math.min((int) request.getOffset(), matches.size());
+        int to = Math.min(from + request.getPageSize(), matches.size());
+        return new PageImpl<>(matches.subList(from, to), request, matches.size()).map(this::enrich);
+    }
+
+    private static String fold(String text) {
+        if (text == null) return "";
+        return Normalizer.normalize(text, Normalizer.Form.NFKD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[\\u200B-\\u200D\\uFEFF]", "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
     }
 
     public List<VoteProfile> findPublished() {
