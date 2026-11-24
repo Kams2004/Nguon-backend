@@ -71,8 +71,8 @@ public class VoteService {
                             + "Si vous n'avez pas demandé ce code, vous pouvez ignorer cet email."
             );
         } catch (Exception e) {
-            if (isSendingQuotaExceeded(e)) {
-                log.warn("OTP email to {} refused: mail provider sending quota exceeded", email);
+            if (EmailService.isQuotaExceeded(e)) {
+                log.warn("OTP email to {} refused: every mail route is over its sending quota", email);
                 return VoteOtpResponse.fail("Le service d'envoi des codes est momentanément saturé. Réessayez plus tard.");
             }
             log.error("Failed to send OTP email to {}", email, e);
@@ -119,16 +119,6 @@ public class VoteService {
                 .stream()
                 .map(v -> new VoterDto(v.getEmail(), v.getVerifiedAt()))
                 .toList();
-    }
-
-    // SMTP 550 5.4.5 is the provider's daily/hourly sending cap (e.g. Gmail's
-    // "Daily user sending limit exceeded"). Retrying immediately cannot work.
-    private static boolean isSendingQuotaExceeded(Throwable e) {
-        for (Throwable t = e; t != null; t = t.getCause()) {
-            String m = t.getMessage();
-            if (m != null && (m.contains("5.4.5") || m.toLowerCase().contains("sending limit"))) return true;
-        }
-        return false;
     }
 
     private String normalize(String email) {
