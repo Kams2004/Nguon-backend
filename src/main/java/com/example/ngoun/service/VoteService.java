@@ -1,5 +1,6 @@
 package com.example.ngoun.service;
 
+import com.example.ngoun.dto.DeviceVoteStatus;
 import com.example.ngoun.dto.VoteConfirmResponse;
 import com.example.ngoun.dto.VoteOtpResponse;
 import com.example.ngoun.dto.VoterDto;
@@ -25,6 +26,8 @@ public class VoteService {
 
     private static final int OTP_TTL_MINUTES = 10;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    private static final Pattern DEVICE_ID_PATTERN = Pattern.compile("^[A-Za-z0-9-]{16,64}$");
+    private static final String DEVICE_ALREADY_VOTED = "Un vote a déjà été enregistré depuis cet appareil. Un seul vote par appareil est autorisé.";
 
     private final VoteRepository voteRepository;
     private final VoteProfileRepository voteProfileRepository;
@@ -33,10 +36,17 @@ public class VoteService {
     private final SecureRandom random = new SecureRandom();
 
     @Transactional
-    public VoteOtpResponse requestOtp(Long voteProfileId, String rawEmail) {
+    public VoteOtpResponse requestOtp(Long voteProfileId, String rawEmail, String rawDeviceId) {
         String email = normalize(rawEmail);
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             return VoteOtpResponse.fail("Adresse email invalide.");
+        }
+        String deviceId = validDeviceId(rawDeviceId);
+        if (deviceId == null) {
+            return VoteOtpResponse.fail("Impossible d'identifier cet appareil. Rechargez la page puis réessayez.");
+        }
+        if (voteRepository.existsByDeviceIdAndVerifiedTrue(deviceId)) {
+            return VoteOtpResponse.fail(DEVICE_ALREADY_VOTED);
         }
 
         Optional<VoteProfile> profileOpt = voteProfileRepository.findById(voteProfileId);
@@ -60,6 +70,7 @@ public class VoteService {
         vote.setOtpCode(otp);
         vote.setOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
         vote.setVerified(false);
+        vote.setDeviceId(deviceId);
         voteRepository.save(vote);
 
         try {
@@ -83,7 +94,7 @@ public class VoteService {
     }
 
     @Transactional
-    public VoteConfirmResponse confirmOtp(String rawEmail, String rawOtp) {
+    public VoteConfirmResponse confirmOtp(String rawEmail, String rawOtp, String rawDeviceId) {
         String email = normalize(rawEmail);
         String otp = rawOtp == null ? "" : rawOtp.trim();
 
@@ -102,7 +113,17 @@ public class VoteService {
         if (!vote.getOtpCode().equalsIgnoreCase(otp)) {
             return VoteConfirmResponse.fail("Code invalide.");
         }
+        // The device that asked for the code is the one being counted; codes
+        // requested before this rule existed fall back to the confirming device.
+        String deviceId = vote.getDeviceId() != null ? vote.getDeviceId() : validDeviceId(rawDeviceId);
+        if (deviceId == null) {
+            return VoteConfirmResponse.fail("Impossible d'identifier cet appareil. Rechargez la page puis réessayez.");
+        }
+        if (voteRepository.existsByDeviceIdAndVerifiedTrue(deviceId)) {
+            return VoteConfirmResponse.fail(DEVICE_ALREADY_VOTED);
+        }
 
+        vote.setDeviceId(deviceId);
         vote.setVerified(true);
         vote.setVerifiedAt(LocalDateTime.now());
         voteRepository.save(vote);
@@ -112,6 +133,20 @@ public class VoteService {
         voteProfileRepository.save(profile);
 
         return VoteConfirmResponse.ok(profile.getName());
+    }
+
+    public DeviceVoteStatus deviceStatus(String rawDeviceId) {
+        String deviceId = validDeviceId(rawDeviceId);
+        if (deviceId == null) return DeviceVoteStatus.none();
+        return voteRepository.findFirstByDeviceIdAndVerifiedTrue(deviceId)
+                .map(v -> new DeviceVoteStatus(true, v.getVoteProfile().getId(), v.getVoteProfile().getName()))
+                .orElse(DeviceVoteStatus.none());
+    }
+
+    private static String validDeviceId(String raw) {
+        if (raw == null) return null;
+        String id = raw.trim();
+        return DEVICE_ID_PATTERN.matcher(id).matches() ? id : null;
     }
 
     public List<VoterDto> votersOf(Long voteProfileId) {

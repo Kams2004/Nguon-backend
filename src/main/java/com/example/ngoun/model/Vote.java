@@ -42,5 +42,10 @@ public class Vote {
 
     private LocalDateTime verifiedAt;
 
+    // Random ID kept by the voter's browser; at most one verified vote per
+    // device (see VoteService and DeviceVoteIndex).
+    @Column(length = 64)
+    private String deviceId;
+
     @PrePersist void onCreate() { createdAt = LocalDateTime.now(); }
 }

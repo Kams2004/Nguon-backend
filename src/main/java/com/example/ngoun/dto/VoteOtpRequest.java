@@ -6,4 +6,5 @@ import lombok.Data;
 public class VoteOtpRequest {
     private Long voteProfileId;
     private String email;
+    private String deviceId;
 }

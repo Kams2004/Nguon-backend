@@ -11,4 +11,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     List<Vote> findByVoteProfileIdAndVerifiedTrueOrderByVerifiedAtDesc(Long voteProfileId);
     long countByVoteProfileIdAndVerifiedTrue(Long voteProfileId);
     void deleteByVoteProfileId(Long voteProfileId);
+    boolean existsByDeviceIdAndVerifiedTrue(String deviceId);
+    Optional<Vote> findFirstByDeviceIdAndVerifiedTrue(String deviceId);
 }

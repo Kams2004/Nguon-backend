@@ -6,4 +6,5 @@ import lombok.Data;
 public class VoteConfirmRequest {
     private String email;
     private String otp;
+    private String deviceId;
 }
