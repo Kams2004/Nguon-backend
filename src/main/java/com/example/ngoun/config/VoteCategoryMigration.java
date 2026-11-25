@@ -35,11 +35,12 @@ public class VoteCategoryMigration {
         try {
             List<VoteProfile> unclassified = profiles.findAll().stream().filter(p -> p.getCategory() == null).toList();
             unclassified.forEach(p -> p.setCategory(VoteCategory.guessFrom(p.getDescription())));
-            profiles.saveAll(unclassified);
+            // Flush now: the JDBC update below reads these categories from the table.
+            profiles.saveAllAndFlush(unclassified);
             if (!unclassified.isEmpty()) log.info("Vote categories: classified {} profile(s)", unclassified.size());
 
             int votes = jdbc.update("update votes v set category = p.category from vote_profiles p "
-                    + "where v.vote_profile_id = p.id and (v.category is null or v.category <> p.category)");
+                    + "where v.vote_profile_id = p.id and p.category is not null and v.category is distinct from p.category");
             if (votes > 0) log.info("Vote categories: set category on {} vote(s)", votes);
 
             List<String> emailOnly = jdbc.queryForList(
