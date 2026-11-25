@@ -28,7 +28,7 @@ public class VoteController {
 
     @PostMapping("/api/votes/confirm-otp")
     public VoteConfirmResponse confirmOtp(@RequestBody VoteConfirmRequest req) {
-        return voteService.confirmOtp(req.getEmail(), req.getOtp(), req.getDeviceId());
+        return voteService.confirmOtp(req.getEmail(), req.getOtp(), req.getDeviceId(), req.getVoteProfileId());
     }
 
     @GetMapping("/api/votes/device-status")
@@ -40,6 +40,6 @@ public class VoteController {
     // database's one-verified-vote-per-device index rejects the second.
     @ExceptionHandler(DataIntegrityViolationException.class)
     public VoteConfirmResponse duplicateDeviceVote() {
-        return VoteConfirmResponse.fail("Un vote a déjà été enregistré depuis cet appareil. Un seul vote par appareil est autorisé.");
+        return VoteConfirmResponse.fail("Un vote a déjà été enregistré depuis cet appareil dans cette catégorie.");
     }
 }

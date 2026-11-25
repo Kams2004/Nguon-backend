@@ -1,5 +1,6 @@
 package com.example.ngoun.controller;
 
+import com.example.ngoun.model.VoteCategory;
 import com.example.ngoun.dto.PageResponse;
 import com.example.ngoun.dto.VoteProfileRequest;
 import com.example.ngoun.dto.VoterDto;
@@ -33,8 +34,9 @@ public class VoteProfileController {
     public PageResponse<VoteProfile> getPaged(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String search) {
-        return PageResponse.of(service.findPaged(page, size, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) VoteCategory category) {
+        return PageResponse.of(service.findPaged(page, size, search, category));
     }
 
     @GetMapping("/api/vote-profiles/{id}")

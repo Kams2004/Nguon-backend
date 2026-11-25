@@ -7,4 +7,5 @@ public class VoteConfirmRequest {
     private String email;
     private String otp;
     private String deviceId;
+    private Long voteProfileId;
 }

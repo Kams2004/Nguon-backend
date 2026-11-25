@@ -5,6 +5,7 @@ import com.example.ngoun.dto.VoteConfirmResponse;
 import com.example.ngoun.dto.VoteOtpResponse;
 import com.example.ngoun.dto.VoterDto;
 import com.example.ngoun.model.Vote;
+import com.example.ngoun.model.VoteCategory;
 import com.example.ngoun.model.VoteProfile;
 import com.example.ngoun.repository.VoteProfileRepository;
 import com.example.ngoun.repository.VoteRepository;
@@ -27,13 +28,23 @@ public class VoteService {
     private static final int OTP_TTL_MINUTES = 10;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final Pattern DEVICE_ID_PATTERN = Pattern.compile("^[A-Za-z0-9-]{16,64}$");
-    private static final String DEVICE_ALREADY_VOTED = "Un vote a déjà été enregistré depuis cet appareil. Un seul vote par appareil est autorisé.";
-
     private final VoteRepository voteRepository;
     private final VoteProfileRepository voteProfileRepository;
     private final EmailService emailService;
     private final EmailVerificationService emailVerificationService;
     private final SecureRandom random = new SecureRandom();
+
+    private static VoteCategory categoryOf(VoteProfile p) {
+        return p.getCategory() != null ? p.getCategory() : VoteCategory.guessFrom(p.getDescription());
+    }
+
+    private static String deviceAlreadyVoted(VoteCategory c) {
+        return "Un vote " + c.getLabel() + " a déjà été enregistré depuis cet appareil. Un seul vote par catégorie et par appareil est autorisé.";
+    }
+
+    private static String emailAlreadyVoted(VoteCategory c) {
+        return "Cette adresse email a déjà voté dans la catégorie " + c.getLabel() + ".";
+    }
 
     @Transactional
     public VoteOtpResponse requestOtp(Long voteProfileId, String rawEmail, String rawDeviceId) {
@@ -45,18 +56,20 @@ public class VoteService {
         if (deviceId == null) {
             return VoteOtpResponse.fail("Impossible d'identifier cet appareil. Rechargez la page puis réessayez.");
         }
-        if (voteRepository.existsByDeviceIdAndVerifiedTrue(deviceId)) {
-            return VoteOtpResponse.fail(DEVICE_ALREADY_VOTED);
-        }
 
-        Optional<VoteProfile> profileOpt = voteProfileRepository.findById(voteProfileId);
+        Optional<VoteProfile> profileOpt = voteProfileId == null ? Optional.empty() : voteProfileRepository.findById(voteProfileId);
         if (profileOpt.isEmpty()) {
             return VoteOtpResponse.fail("Profil introuvable.");
         }
+        VoteCategory category = categoryOf(profileOpt.get());
 
-        Optional<Vote> existing = voteRepository.findByEmail(email);
+        if (voteRepository.existsByDeviceIdAndCategoryAndVerifiedTrue(deviceId, category)) {
+            return VoteOtpResponse.fail(deviceAlreadyVoted(category));
+        }
+
+        Optional<Vote> existing = voteRepository.findByEmailAndCategory(email, category);
         if (existing.isPresent() && existing.get().isVerified()) {
-            return VoteOtpResponse.fail("Cette adresse email a déjà voté.");
+            return VoteOtpResponse.fail(emailAlreadyVoted(category));
         }
 
         if (!emailVerificationService.mightExist(email)) {
@@ -66,6 +79,7 @@ public class VoteService {
         String otp = generateOtp();
         Vote vote = existing.orElseGet(Vote::new);
         vote.setEmail(email);
+        vote.setCategory(category);
         vote.setVoteProfile(profileOpt.get());
         vote.setOtpCode(otp);
         vote.setOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
@@ -76,9 +90,10 @@ public class VoteService {
         try {
             emailService.sendEmail(
                     email,
-                    "Votre code de vote — Nguon 2026",
+                    "Votre code de vote " + category.getLabel() + " — Nguon 2026",
                     "Votre code de confirmation est : " + otp + "\n\n"
-                            + "Ce code expire dans " + OTP_TTL_MINUTES + " minutes.\n\n"
+                            + "Ce code confirme votre vote dans la catégorie " + category.getLabel() + ".\n"
+                            + "Il expire dans " + OTP_TTL_MINUTES + " minutes.\n\n"
                             + "Si vous n'avez pas demandé ce code, vous pouvez ignorer cet email."
             );
         } catch (Exception e) {
@@ -94,18 +109,30 @@ public class VoteService {
     }
 
     @Transactional
-    public VoteConfirmResponse confirmOtp(String rawEmail, String rawOtp, String rawDeviceId) {
+    public VoteConfirmResponse confirmOtp(String rawEmail, String rawOtp, String rawDeviceId, Long voteProfileId) {
         String email = normalize(rawEmail);
         String otp = rawOtp == null ? "" : rawOtp.trim();
 
-        Optional<Vote> voteOpt = voteRepository.findByEmail(email);
+        // The page sends the profile, which fixes the category. Older pages
+        // don't: then the pending request whose code matches is the one.
+        Optional<Vote> voteOpt;
+        if (voteProfileId != null) {
+            voteOpt = voteProfileRepository.findById(voteProfileId)
+                    .flatMap(p -> voteRepository.findByEmailAndCategory(email, categoryOf(p)));
+        } else {
+            List<Vote> all = voteRepository.findAllByEmail(email);
+            voteOpt = all.stream().filter(v -> !v.isVerified() && v.getOtpCode().equalsIgnoreCase(otp)).findFirst()
+                    .or(() -> all.stream().filter(v -> !v.isVerified()).findFirst())
+                    .or(() -> all.stream().findFirst());
+        }
         if (voteOpt.isEmpty()) {
             return VoteConfirmResponse.fail("Aucune demande de vote trouvée pour cet email.");
         }
 
         Vote vote = voteOpt.get();
+        VoteCategory category = vote.getCategory() != null ? vote.getCategory() : categoryOf(vote.getVoteProfile());
         if (vote.isVerified()) {
-            return VoteConfirmResponse.fail("Cette adresse email a déjà voté.");
+            return VoteConfirmResponse.fail(emailAlreadyVoted(category));
         }
         if (vote.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
             return VoteConfirmResponse.fail("Code expiré, veuillez redemander un code.");
@@ -119,11 +146,12 @@ public class VoteService {
         if (deviceId == null) {
             return VoteConfirmResponse.fail("Impossible d'identifier cet appareil. Rechargez la page puis réessayez.");
         }
-        if (voteRepository.existsByDeviceIdAndVerifiedTrue(deviceId)) {
-            return VoteConfirmResponse.fail(DEVICE_ALREADY_VOTED);
+        if (voteRepository.existsByDeviceIdAndCategoryAndVerifiedTrue(deviceId, category)) {
+            return VoteConfirmResponse.fail(deviceAlreadyVoted(category));
         }
 
         vote.setDeviceId(deviceId);
+        vote.setCategory(category);
         vote.setVerified(true);
         vote.setVerifiedAt(LocalDateTime.now());
         voteRepository.save(vote);
@@ -138,9 +166,14 @@ public class VoteService {
     public DeviceVoteStatus deviceStatus(String rawDeviceId) {
         String deviceId = validDeviceId(rawDeviceId);
         if (deviceId == null) return DeviceVoteStatus.none();
-        return voteRepository.findFirstByDeviceIdAndVerifiedTrue(deviceId)
-                .map(v -> new DeviceVoteStatus(true, v.getVoteProfile().getId(), v.getVoteProfile().getName()))
-                .orElse(DeviceVoteStatus.none());
+        List<DeviceVoteStatus.CategoryVote> votes = voteRepository.findByDeviceIdAndVerifiedTrue(deviceId).stream()
+                .map(v -> new DeviceVoteStatus.CategoryVote(
+                        v.getCategory() != null ? v.getCategory() : categoryOf(v.getVoteProfile()),
+                        v.getVoteProfile().getId(), v.getVoteProfile().getName()))
+                .toList();
+        if (votes.isEmpty()) return DeviceVoteStatus.none();
+        DeviceVoteStatus.CategoryVote first = votes.get(0);
+        return new DeviceVoteStatus(true, first.voteProfileId(), first.profileName(), votes);
     }
 
     private static String validDeviceId(String raw) {

@@ -7,14 +7,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// One row per email, ever — the unique constraint on `email` is what enforces
-// "one vote total across the whole contest" (not per-profile). A fresh OTP
-// request for an unverified row updates it in place rather than inserting a
-// new one; only a row that reaches verified=true counts as a cast vote.
+// One row per email and category (Miss / Mister): a person votes once in each
+// category. The unique index on (email, category) and the one-verified-vote-
+// per-device-and-category index are created by VoteCategoryMigration. A fresh
+// OTP request for an unverified row updates it in place; only a row that
+// reaches verified=true counts as a cast vote.
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "votes", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
+@Table(name = "votes")
 @JsonIgnoreProperties({"otpCode"})
 public class Vote {
 
@@ -25,8 +26,12 @@ public class Vote {
     @JoinColumn(name = "vote_profile_id", nullable = false)
     private VoteProfile voteProfile;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private VoteCategory category;
 
     @Column(nullable = false)
     private String otpCode;

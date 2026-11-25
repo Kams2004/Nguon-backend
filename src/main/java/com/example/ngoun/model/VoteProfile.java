@@ -28,6 +28,10 @@ public class VoteProfile {
     @Column(nullable = false)
     private boolean published = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private VoteCategory category;
+
     @Column(nullable = false)
     private int voteCount = 0;
 

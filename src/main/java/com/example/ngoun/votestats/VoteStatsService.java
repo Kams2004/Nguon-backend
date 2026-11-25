@@ -1,5 +1,6 @@
 package com.example.ngoun.votestats;
 
+import com.example.ngoun.model.VoteCategory;
 import com.example.ngoun.model.VoteProfile;
 import com.example.ngoun.repository.VoteProfileRepository;
 import com.example.ngoun.service.PresignedUrlCache;
@@ -41,15 +42,19 @@ public class VoteStatsService {
 
     public record DayCount(LocalDate date, long votes) {}
 
+    /** rank and share are within the candidate's category (Miss or Mister). */
     public record CandidateStats(Long id, String name, String description, String photoUrl, String photoPresignedUrl,
-                                 boolean published, long votes, int rank, double share,
+                                 boolean published, VoteCategory category, long votes, int rank, double share,
                                  LocalDateTime firstVoteAt, LocalDateTime lastVoteAt, long votesLast24h,
                                  List<DayCount> daily) {}
+
+    public record CategorySummary(VoteCategory category, String label, long totalVotes, int candidates,
+                                  List<DayCount> daily, List<CandidateStats> ranking) {}
 
     public record Overview(LocalDateTime generatedAt, String timezone, long totalVotes, long codesRequested,
                            long pendingCodes, long devices, int candidates,
                            LocalDateTime firstVoteAt, LocalDateTime lastVoteAt,
-                           List<DayCount> daily, List<CandidateStats> ranking) {}
+                           List<DayCount> daily, List<CandidateStats> ranking, List<CategorySummary> categories) {}
 
     private record Row(long profileId, LocalDateTime verifiedAt) {}
 
@@ -58,41 +63,56 @@ public class VoteStatsService {
         List<Row> rows = verifiedRows(zone);
         Map<Long, List<Row>> byProfile = new HashMap<>();
         rows.forEach(r -> byProfile.computeIfAbsent(r.profileId(), k -> new ArrayList<>()).add(r));
-
-        long total = rows.size();
         List<VoteProfile> all = profiles.findAllByOrderByCreatedAtAsc();
-        List<CandidateStats> ranking = new ArrayList<>();
-        for (VoteProfile p : all) ranking.add(build(p, byProfile.getOrDefault(p.getId(), List.of()), total, zone, 0));
-        ranking.sort(Comparator.comparingLong(CandidateStats::votes).reversed().thenComparing(CandidateStats::name));
 
-        // Competition ranking: equal votes share a rank (1, 1, 3, ...).
-        List<CandidateStats> ranked = new ArrayList<>();
-        for (int i = 0; i < ranking.size(); i++) {
-            CandidateStats c = ranking.get(i);
-            int rank = (i > 0 && ranking.get(i - 1).votes() == c.votes()) ? ranked.get(i - 1).rank() : i + 1;
-            ranked.add(withRank(c, rank));
+        List<CategorySummary> categories = new ArrayList<>();
+        List<CandidateStats> ranking = new ArrayList<>();
+        for (VoteCategory cat : VoteCategory.values()) {
+            List<VoteProfile> members = all.stream().filter(p -> categoryOf(p) == cat).toList();
+            List<Row> catRows = new ArrayList<>();
+            members.forEach(p -> catRows.addAll(byProfile.getOrDefault(p.getId(), List.of())));
+            catRows.sort(Comparator.comparing(Row::verifiedAt));
+            long catTotal = catRows.size();
+
+            List<CandidateStats> list = new ArrayList<>();
+            for (VoteProfile p : members) list.add(build(p, cat, byProfile.getOrDefault(p.getId(), List.of()), catTotal, zone));
+            list.sort(Comparator.comparingLong(CandidateStats::votes).reversed().thenComparing(CandidateStats::name));
+
+            // Competition ranking within the category: equal votes share a rank (1, 1, 3, ...).
+            List<CandidateStats> ranked = new ArrayList<>();
+            for (int i = 0; i < list.size(); i++) {
+                CandidateStats c = list.get(i);
+                int rank = (i > 0 && list.get(i - 1).votes() == c.votes()) ? ranked.get(i - 1).rank() : i + 1;
+                ranked.add(withRank(c, rank));
+            }
+            categories.add(new CategorySummary(cat, cat.getLabel(), catTotal, members.size(), daily(catRows), ranked));
+            ranking.addAll(ranked);
         }
 
         Map<String, Object> counts = jdbc.queryForMap(
                 "select count(*) as requested, count(*) filter (where not verified) as pending, "
                         + "count(distinct device_id) filter (where verified and device_id is not null) as devices from votes");
 
-        return new Overview(LocalDateTime.now(zone), reportZone, total,
+        return new Overview(LocalDateTime.now(zone), reportZone, rows.size(),
                 ((Number) counts.get("requested")).longValue(), ((Number) counts.get("pending")).longValue(),
                 ((Number) counts.get("devices")).longValue(), all.size(),
                 rows.isEmpty() ? null : rows.get(0).verifiedAt(),
                 rows.isEmpty() ? null : rows.get(rows.size() - 1).verifiedAt(),
-                daily(rows), ranked);
+                daily(rows), ranking, categories);
+    }
+
+    private static VoteCategory categoryOf(VoteProfile p) {
+        return p.getCategory() != null ? p.getCategory() : VoteCategory.guessFrom(p.getDescription());
     }
 
     public Optional<CandidateStats> candidate(Long id) {
         return overview().ranking().stream().filter(c -> c.id().equals(id)).findFirst();
     }
 
-    private CandidateStats build(VoteProfile p, List<Row> rows, long total, ZoneId zone, int rank) {
+    private CandidateStats build(VoteProfile p, VoteCategory category, List<Row> rows, long total, ZoneId zone) {
         LocalDateTime dayAgo = LocalDateTime.now(zone).minusHours(24);
         return new CandidateStats(p.getId(), p.getName(), p.getDescription(), p.getPhotoUrl(),
-                urlCache.get(p.getPhotoUrl()), p.isPublished(), rows.size(), rank,
+                urlCache.get(p.getPhotoUrl()), p.isPublished(), category, rows.size(), 0,
                 total == 0 ? 0 : rows.size() * 100.0 / total,
                 rows.isEmpty() ? null : rows.get(0).verifiedAt(),
                 rows.isEmpty() ? null : rows.get(rows.size() - 1).verifiedAt(),
@@ -102,7 +122,7 @@ public class VoteStatsService {
 
     private static CandidateStats withRank(CandidateStats c, int rank) {
         return new CandidateStats(c.id(), c.name(), c.description(), c.photoUrl(), c.photoPresignedUrl(), c.published(),
-                c.votes(), rank, c.share(), c.firstVoteAt(), c.lastVoteAt(), c.votesLast24h(), c.daily());
+                c.category(), c.votes(), rank, c.share(), c.firstVoteAt(), c.lastVoteAt(), c.votesLast24h(), c.daily());
     }
 
     private List<Row> verifiedRows(ZoneId zone) {

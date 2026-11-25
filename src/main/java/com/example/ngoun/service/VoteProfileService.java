@@ -1,6 +1,7 @@
 package com.example.ngoun.service;
 
 import com.example.ngoun.dto.VoteProfileRequest;
+import com.example.ngoun.model.VoteCategory;
 import com.example.ngoun.model.VoteProfile;
 import com.example.ngoun.repository.VoteProfileRepository;
 import com.example.ngoun.repository.VoteRepository;
@@ -29,15 +30,15 @@ public class VoteProfileService {
         return repository.findAllByOrderByCreatedAtAsc().stream().map(this::enrich).toList();
     }
 
-    public Page<VoteProfile> findPaged(int page, int size, String search) {
+    public Page<VoteProfile> findPaged(int page, int size, String search, VoteCategory category) {
         PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
         String q = fold(search);
-        if (q.isEmpty()) return repository.findAll(request).map(this::enrich);
         // Names are often pasted from social media in Unicode "mathematical
         // bold" letters, which a SQL LIKE never matches, so the (small) list is
         // folded and filtered here instead.
         List<VoteProfile> matches = repository.findAllByOrderByCreatedAtAsc().stream()
-                .filter(p -> fold(p.getName()).contains(q) || fold(p.getDescription()).contains(q))
+                .filter(p -> category == null || category == p.getCategory())
+                .filter(p -> q.isEmpty() || fold(p.getName()).contains(q) || fold(p.getDescription()).contains(q))
                 .toList();
         int from = Math.min((int) request.getOffset(), matches.size());
         int to = Math.min(from + request.getPageSize(), matches.size());
@@ -96,6 +97,9 @@ public class VoteProfileService {
         p.setDescription(req.getDescription());
         p.setPhotoUrl(req.getPhotoUrl());
         p.setPublished(req.isPublished());
+        // Older admin pages don't send a category: keep the current one, or guess it.
+        if (req.getCategory() != null) p.setCategory(req.getCategory());
+        else if (p.getCategory() == null) p.setCategory(VoteCategory.guessFrom(req.getDescription()));
     }
 
     private VoteProfile enrich(VoteProfile p) {
