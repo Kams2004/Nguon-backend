@@ -24,6 +24,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configure(http))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Vote analytics and voter lists expose voter emails and results: admins only.
+                        .requestMatchers(HttpMethod.GET, "/api/vote-profiles/admin/**", "/api/vote-profiles/*/voters").authenticated()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
